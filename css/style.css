@@ -133,6 +133,23 @@ h2 {
     background: #000;
 }
 
+.scan-status {
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    background: #eef4ff;
+    color: #1a4fa0;
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.scan-status.error {
+    background: #fdecea;
+    color: #b32020;
+    border: 1px solid #f5c2c0;
+}
+
 #list-presence {
     width: 100%;
     border-collapse: collapse;

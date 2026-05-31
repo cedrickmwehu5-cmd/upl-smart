@@ -28,22 +28,70 @@ function activerCamera() {
         }
     };
 
-    html5QrScanner.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess,
-        () => {}
-    )
-    .catch(err =>
-        alert("Erreur Caméra : " + err)
-    );
+    setScanStatus('Recherche de la caméra…');
+
+    Html5Qrcode.getCameras()
+        .then(cameras => {
+            const cameraConfig =
+                cameras && cameras.length
+                    ? cameras[0].id
+                    : { facingMode: "environment" };
+
+            return html5QrScanner.start(
+                cameraConfig,
+                config,
+                onScanSuccess,
+                onScanError
+            );
+        })
+        .catch(err => {
+            console.warn('Camera selection failed, fallback to facingMode', err);
+            return html5QrScanner.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            );
+        })
+        .catch(err => {
+            setScanStatus('Impossible d’accéder à la caméra : ' + (err.message || err), true);
+            document.getElementById('btn-camera')
+                .classList.remove('hidden');
+            document.getElementById('reader')
+                .classList.add('hidden');
+        });
+}
+
+
+function setScanStatus(message, isError = false) {
+    const status = document.getElementById('scan-status');
+    status.textContent = message;
+    status.classList.remove('hidden', 'error');
+    if (isError) {
+        status.classList.add('error');
+    }
+}
+
+
+function clearScanStatus() {
+    const status = document.getElementById('scan-status');
+    status.textContent = '';
+    status.classList.add('hidden');
+}
+
+
+function onScanError(errorMessage) {
+    console.debug('QR scan error:', errorMessage);
+    setScanStatus('Lecture impossible, oriente mieux l’appareil vers le QR code.', true);
 }
 
 
 function onScanSuccess(decodedText) {
+    const token = decodedText.trim();
 
     if (scanLock) return;
 
+    setScanStatus('QR détecté, validation en cours...');
     scanLock = true;
 
     db.ref('active_session')
@@ -55,7 +103,7 @@ function onScanSuccess(decodedText) {
             snap.forEach(child => {
 
                 if (
-                    child.val().token === decodedText
+                    child.val().token === token
                 ) {
                     coursTrouve = child.key;
                     sessionData = child.val();
@@ -63,6 +111,7 @@ function onScanSuccess(decodedText) {
             });
 
             if (!coursTrouve) {
+                setScanStatus("QR Code expiré ou incorrect.", true);
                 alert("QR Code expiré ou incorrect.");
                 scanLock = false;
                 return;

@@ -25,7 +25,7 @@ function ouvrirSession() {
 
     // Rotation QR
     qrInterval =
-        setInterval(() => refreshQR(cours, promo), 15000);
+        setInterval(() => refreshQR(cours, promo), 30000);
 
     // Présences temps réel
     db.ref('presences/' + cours)
