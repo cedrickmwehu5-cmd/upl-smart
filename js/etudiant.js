@@ -1,5 +1,15 @@
 // --- LOGIQUE ETUDIANT ---
 
+let currentFacingMode = 'environment';
+let currentCameraId = null;
+const scanConfig = {
+    fps: 10,
+    qrbox: {
+        width: 250,
+        height: 250
+    }
+};
+
 function activerCamera() {
 
     const name =
@@ -20,38 +30,34 @@ function activerCamera() {
     html5QrScanner =
         new Html5Qrcode("reader");
 
-    const config = {
-        fps: 10,
-        qrbox: {
-            width: 250,
-            height: 250
-        }
-    };
-
     setScanStatus('Recherche de la caméra…');
 
     Html5Qrcode.getCameras()
         .then(cameras => {
-            const cameraConfig =
-                cameras && cameras.length
-                    ? cameras[0].id
-                    : { facingMode: "environment" };
-
+            currentCameraId = null;
+            const cameraConfig = pickCameraConfig(cameras, currentFacingMode);
+            if (typeof cameraConfig === 'string') {
+                currentCameraId = cameraConfig;
+            }
             return html5QrScanner.start(
                 cameraConfig,
-                config,
+                scanConfig,
                 onScanSuccess,
                 onScanError
             );
         })
         .catch(err => {
             console.warn('Camera selection failed, fallback to facingMode', err);
+            currentCameraId = null;
             return html5QrScanner.start(
-                { facingMode: "environment" },
-                config,
+                { facingMode: currentFacingMode },
+                scanConfig,
                 onScanSuccess,
                 onScanError
             );
+        })
+        .then(() => {
+            showCameraToggle(true);
         })
         .catch(err => {
             setScanStatus('Impossible d’accéder à la caméra : ' + (err.message || err), true);
@@ -59,9 +65,85 @@ function activerCamera() {
                 .classList.remove('hidden');
             document.getElementById('reader')
                 .classList.add('hidden');
+            showCameraToggle(false);
         });
 }
 
+function pickCameraConfig(cameras, facingMode) {
+    const fallback = { facingMode };
+
+    if (!cameras || !cameras.length) {
+        return fallback;
+    }
+
+    const isBack = facingMode === 'environment';
+    const preferredRegex = isBack
+        ? /back|rear|arrière|environment/i
+        : /front|user|selfie|avant/i;
+
+    const match = cameras.find(c => preferredRegex.test(c.label || c.id || ''));
+    if (match && match.id) {
+        return match.id;
+    }
+
+    if (isBack) {
+        return cameras[cameras.length - 1].id || fallback;
+    }
+
+    return cameras[0].id || fallback;
+}
+
+function showCameraToggle(show) {
+    const toggle = document.getElementById('btn-toggle-camera');
+    if (!toggle) return;
+
+    if (show) {
+        toggle.classList.remove('hidden');
+        updateToggleButtonText();
+    } else {
+        toggle.classList.add('hidden');
+    }
+}
+
+function updateToggleButtonText() {
+    const toggle = document.getElementById('btn-toggle-camera');
+    if (!toggle) return;
+
+    toggle.innerHTML = currentFacingMode === 'environment'
+        ? '<i class="fas fa-camera"></i> Caméra arrière'
+        : '<i class="fas fa-camera"></i> Caméra avant';
+}
+
+
+function toggleCameraFacing() {
+    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    updateToggleButtonText();
+
+    if (!html5QrScanner) return;
+
+    setScanStatus('Changement de caméra…');
+    html5QrScanner.stop()
+        .then(() => html5QrScanner.clear())
+        .then(() => Html5Qrcode.getCameras())
+        .then(cameras => {
+            currentCameraId = null;
+            const cameraConfig = pickCameraConfig(cameras, currentFacingMode);
+            if (typeof cameraConfig === 'string') {
+                currentCameraId = cameraConfig;
+            }
+            return html5QrScanner.start(
+                cameraConfig,
+                scanConfig,
+                onScanSuccess,
+                onScanError
+            );
+        })
+        .then(() => setScanStatus('Caméra changée, scannez le QR code...'))
+        .catch(err => {
+            console.warn('Erreur de bascule caméra', err);
+            setScanStatus('Impossible de changer de caméra.', true);
+        });
+}
 
 function setScanStatus(message, isError = false) {
     const status = document.getElementById('scan-status');
