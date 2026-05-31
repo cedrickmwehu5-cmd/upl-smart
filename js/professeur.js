@@ -87,15 +87,18 @@ function refreshQR(cours, promo) {
             .substr(2, 6)
             .toUpperCase();
 
-    document.getElementById('qrcode')
-        .innerHTML = "";
+    const qrcodeContainer = document.getElementById('qrcode');
+    qrcodeContainer.innerHTML = "";
+
+    const availableWidth = qrcodeContainer.clientWidth || Math.min(window.innerWidth * 0.8, 700);
+    const size = Math.max(220, Math.min(availableWidth, 700));
 
     new QRCode(
-        document.getElementById("qrcode"),
+        qrcodeContainer,
         {
             text: token,
-            width: 200,
-            height: 200
+            width: size,
+            height: size
         }
     );
 

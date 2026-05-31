@@ -2,13 +2,27 @@
 
 let currentFacingMode = 'environment';
 let currentCameraId = null;
-const scanConfig = {
-    fps: 10,
-    qrbox: {
-        width: 250,
-        height: 250
-    }
-};
+let scanErrorBuffered = false;
+
+function computeQrBoxSize() {
+    const maxSize = 320;
+    const minSize = 250;
+    const width = Math.min(maxSize, Math.max(minSize, window.innerWidth - 40));
+    return {
+        width,
+        height: width
+    };
+}
+
+function getScanConfig() {
+    return {
+        fps: 30,
+        qrbox: computeQrBoxSize(),
+        videoConstraints: {
+            facingMode: currentFacingMode
+        }
+    };
+}
 
 function activerCamera() {
 
@@ -41,7 +55,7 @@ function activerCamera() {
             }
             return html5QrScanner.start(
                 cameraConfig,
-                scanConfig,
+                getScanConfig(),
                 onScanSuccess,
                 onScanError
             );
@@ -51,7 +65,7 @@ function activerCamera() {
             currentCameraId = null;
             return html5QrScanner.start(
                 { facingMode: currentFacingMode },
-                scanConfig,
+                getScanConfig(),
                 onScanSuccess,
                 onScanError
             );
@@ -133,7 +147,7 @@ function toggleCameraFacing() {
             }
             return html5QrScanner.start(
                 cameraConfig,
-                scanConfig,
+                getScanConfig(),
                 onScanSuccess,
                 onScanError
             );
@@ -164,7 +178,12 @@ function clearScanStatus() {
 
 function onScanError(errorMessage) {
     console.debug('QR scan error:', errorMessage);
-    setScanStatus('Lecture impossible, oriente mieux l’appareil vers le QR code.', true);
+    if (scanErrorBuffered) return;
+    scanErrorBuffered = true;
+    setScanStatus('Lecture en cours…', false);
+    setTimeout(() => {
+        scanErrorBuffered = false;
+    }, 1000);
 }
 
 
