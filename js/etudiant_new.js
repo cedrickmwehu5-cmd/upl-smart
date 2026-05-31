@@ -52,7 +52,7 @@ function activerCamera() {
         })
         .catch(err => {
             console.warn('Camera start failed', err);
-            setScanStatus('Impossible d’accéder à la caméra : ' + (err.message || err), true);
+            setScanStatus('Impossible d\'accéder à la caméra : ' + (err.message || err), true);
             document.getElementById('btn-camera')
                 .classList.remove('hidden');
             document.getElementById('reader')
@@ -157,6 +157,7 @@ function onScanSuccess(decodedText) {
     if (html5QrScanner) {
         html5QrScanner.stop().catch(() => {});
     }
+
     // Affiche immédiatement le succès (pas d'attente)
     setScanStatus('✅ Présence validée avec succès !');
     
@@ -168,6 +169,7 @@ function onScanSuccess(decodedText) {
     const matricule = document.getElementById('s-mat').value.trim();
     const nom = document.getElementById('s-name').value;
 
+    // Lancer les vérifications et l'enregistrement en background
     db.ref('active_session')
         .once('value')
         .then(snap => {
@@ -196,40 +198,33 @@ function onScanSuccess(decodedText) {
         })
         .then(coursTrouve => {
             if (!coursTrouve) return;
+
+            // Vérifier doublon
+            return db.ref('presences/' + coursTrouve)
+                .orderByChild('matricule')
                 .equalTo(matricule)
                 .once('value')
-                .then(check => ({ coursTrouve, check }));
+                .then(check => {
+                    if (check.exists()) {
+                        console.warn('Étudiant déjà enregistré');
+                        return null;
+                    }
+                    return coursTrouve;
+                });
         })
-        .then(({ coursTrouve, check }) => {
-            if (check.exists()) {
-                throw new Error('duplicate');
-            }
-            return valider(coursTrouve);
-        })
-        .then(() => {
-            setScanStatus('✅ Présence validée !');
-            setTimeout(() => location.reload(), 1200);
+        .then(coursTrouve => {
+            if (!coursTrouve) return;
+
+            // Enregistrer la présence
+            return db.ref('presences/' + coursTrouve).push({
+                nom: nom,
+                matricule: matricule,
+                promo: promoEtudiant,
+                heure: new Date().toLocaleTimeString('fr-FR')
+            });
         })
         .catch(err => {
-            if (err.message === 'invalid_qr') {
-                setScanStatus('QR Code expiré ou incorrect.', true);
-                alert('QR Code expiré ou incorrect.');
-            } else if (err.message === 'invalid_promo') {
-                setScanStatus('Ce QR ne correspond pas à ta promotion.', true);
-                alert('Ce QR ne correspond pas à ta promotion.');
-            } else if (err.message === 'duplicate') {
-                alert('Tu es déjà inscrit sur la liste !');
-                location.reload();
-                return;
-            } else if (err.message === 'timeout') {
-                setScanStatus('Temps dépassé. Réessaie, le réseau est lent.', true);
-                alert('La validation a pris trop de temps. Réessaie.');
-            } else {
-                console.error('Validation failed:', err);
-                setScanStatus('Échec de l’inscription, vérifie ta connexion.', true);
-                alert('Erreur de validation : vérifie ta connexion et réessaye.');
-            }
-            scanLock = false;
+            console.error('Erreur lors de l\'enregistrement en background:', err);
         });
 }
 
@@ -237,19 +232,10 @@ function onScanSuccess(decodedText) {
 function valider(coursId) {
     return withTimeout(
         db.ref('presences/' + coursId).push({
-
-        nom:
-            document.getElementById('s-name').value,
-
-        matricule:
-            document.getElementById('s-mat').value,
-
-        promo:
-            document.getElementById('s-class').value,
-
-        heure:
-            new Date()
-                .toLocaleTimeString('fr-FR')
+            nom: document.getElementById('s-name').value,
+            matricule: document.getElementById('s-mat').value,
+            promo: document.getElementById('s-class').value,
+            heure: new Date().toLocaleTimeString('fr-FR')
         }),
         4000
     );
