@@ -129,6 +129,24 @@ function onScanError(errorMessage) {
     console.debug('QR scan error:', errorMessage);
 }
 
+function withTimeout(promise, ms) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error('timeout'));
+        }, ms);
+
+        promise
+            .then(value => {
+                clearTimeout(timer);
+                resolve(value);
+            })
+            .catch(err => {
+                clearTimeout(timer);
+                reject(err);
+            });
+    });
+}
+
 
 function onScanSuccess(decodedText) {
     const token = decodedText.trim();
@@ -141,79 +159,73 @@ function onScanSuccess(decodedText) {
     }
     setScanStatus('QR détecté, validation en cours...');
 
-    db.ref('active_session')
-        .once('value', snap => {
+    const promoEtudiant = document.getElementById('s-class').value;
+    const matricule = document.getElementById('s-mat').value.trim();
 
+    db.ref('active_session')
+        .once('value')
+        .then(snap => {
             let coursTrouve = null;
             let sessionData = null;
 
             snap.forEach(child => {
-
-                if (
-                    child.val().token === token
-                ) {
+                if (child.val().token === token) {
                     coursTrouve = child.key;
                     sessionData = child.val();
                 }
             });
 
             if (!coursTrouve) {
-                setScanStatus("QR Code expiré ou incorrect.", true);
-                alert("QR Code expiré ou incorrect.");
-                scanLock = false;
-                return;
+                throw new Error('invalid_qr');
             }
 
-            const promoEtudiant =
-                document.getElementById('s-class').value;
-
-            // Vérification promotion
-            if (
-                sessionData.promo !== promoEtudiant
-            ) {
-                alert(
-                    "Ce QR ne correspond pas à ta promotion."
-                );
-
-                scanLock = false;
-                return;
+            if (sessionData.promo !== promoEtudiant) {
+                throw new Error('invalid_promo');
             }
 
-            const matricule =
-                document.getElementById('s-mat')
-                    .value.trim();
-
-            // Vérifier doublon
-            db.ref(
-                'presences/' + coursTrouve
-            )
-            .orderByChild('matricule')
-            .equalTo(matricule)
-            .once('value', check => {
-
-                if (check.exists()) {
-
-                    alert(
-                        "Tu es déjà inscrit sur la liste !"
-                    );
-
-                    location.reload();
-
-                } else {
-
-                    valider(coursTrouve);
-                }
-            });
+            return db.ref('presences/' + coursTrouve)
+                .orderByChild('matricule')
+                .equalTo(matricule)
+                .once('value')
+                .then(check => ({ coursTrouve, check }));
+        })
+        .then(({ coursTrouve, check }) => {
+            if (check.exists()) {
+                throw new Error('duplicate');
+            }
+            return valider(coursTrouve);
+        })
+        .then(() => {
+            setScanStatus('✅ Présence validée !');
+            setTimeout(() => location.reload(), 1200);
+        })
+        .catch(err => {
+            if (err.message === 'invalid_qr') {
+                setScanStatus('QR Code expiré ou incorrect.', true);
+                alert('QR Code expiré ou incorrect.');
+            } else if (err.message === 'invalid_promo') {
+                setScanStatus('Ce QR ne correspond pas à ta promotion.', true);
+                alert('Ce QR ne correspond pas à ta promotion.');
+            } else if (err.message === 'duplicate') {
+                alert('Tu es déjà inscrit sur la liste !');
+                location.reload();
+                return;
+            } else if (err.message === 'timeout') {
+                setScanStatus('Temps dépassé. Réessaie, le réseau est lent.', true);
+                alert('La validation a pris trop de temps. Réessaie.');
+            } else {
+                console.error('Validation failed:', err);
+                setScanStatus('Échec de l’inscription, vérifie ta connexion.', true);
+                alert('Erreur de validation : vérifie ta connexion et réessaye.');
+            }
+            scanLock = false;
         });
 }
 
 
 function valider(coursId) {
-
-    db.ref(
-        'presences/' + coursId
-    )
-    .push({
+    return withTimeout(
+        db.ref('presences/' + coursId).push({
 
         nom:
             document.getElementById('s-name').value,
@@ -227,25 +239,7 @@ function valider(coursId) {
         heure:
             new Date()
                 .toLocaleTimeString('fr-FR')
-
-    })
-    .then(() => {
-
-        html5QrScanner
-            .stop()
-            .then(() => {
-
-                html5QrScanner.clear();
-
-                alert(
-                    "✅ Présence validée !"
-                );
-
-                location.reload();
-
-            })
-            .catch(() =>
-                location.reload()
-            );
-    });
+        }),
+        4000
+    );
 }
