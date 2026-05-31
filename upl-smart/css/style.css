@@ -1,0 +1,157 @@
+:root {
+    --blue-upl: #1a4fa0;
+    --grey-upl: #6c757d;
+    --bg: #f4f6f9;
+    --red: #e74c3c;
+    --green: #27ae60;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: var(--bg);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.card {
+    background: white;
+    width: 100%;
+    max-width: 450px;
+    padding: 35px;
+    border-radius: 40px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.06);
+    text-align: center;
+    border: 1px solid #eee;
+}
+
+.upl-logo {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 25px;
+    display: block;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--blue-upl);
+    padding: 5px;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+    font-size: 21px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #333;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 18px;
+    text-align: left;
+}
+
+.input-group label {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: white;
+    padding: 0 6px;
+    font-size: 11px;
+    color: var(--blue-upl);
+    font-weight: 700;
+    z-index: 2;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 15px 18px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 14px;
+    box-sizing: border-box;
+    outline: none;
+    background: #fafafa;
+}
+
+.btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-blue {
+    background: var(--blue-upl);
+    color: white;
+    box-shadow: 0 4px 10px rgba(26, 79, 160, 0.2);
+}
+
+.btn-green {
+    background: var(--green);
+    color: white;
+}
+
+.btn-red {
+    background: var(--red);
+    color: white;
+}
+
+.btn-grey {
+    background: var(--grey-upl);
+    color: white;
+}
+
+.hidden {
+    display: none;
+}
+
+#reader {
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 2px dashed #ddd;
+    background: #000;
+}
+
+#list-presence {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#list-presence td {
+    border-bottom: 1px solid #f2f2f2;
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+    color: #444;
+}
+
+#qrcode {
+    display: inline-block;
+    padding: 12px;
+    background: white;
+    border-radius: 15px;
+    border: 1px solid #eee;
+    margin: 15px 0;
+}

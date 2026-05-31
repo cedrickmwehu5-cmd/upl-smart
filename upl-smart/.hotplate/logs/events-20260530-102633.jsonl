@@ -1,0 +1,11 @@
+{"ts":"2026-05-30T10:26:33.894Z","session":"20260530-102633","kind":"server_start","data":{"port":5500,"host":"0.0.0.0","root":"c:\\Users\\Cédrick-PC\\Desktop\\upl-smart","https":false,"live_reload":true}}
+{"ts":"2026-05-30T10:26:49.340Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/index.html","status":200,"duration_ms":2}}
+{"ts":"2026-05-30T10:26:53.756Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/css/style.css","status":200,"duration_ms":3}}
+{"ts":"2026-05-30T10:26:56.723Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/assets/logo.png","status":200,"duration_ms":5}}
+{"ts":"2026-05-30T10:26:56.727Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/js/firebase-config.js","status":200,"duration_ms":2}}
+{"ts":"2026-05-30T10:26:57.125Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/js/ui.js","status":200,"duration_ms":1}}
+{"ts":"2026-05-30T10:26:57.125Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/js/professeur.js","status":200,"duration_ms":1}}
+{"ts":"2026-05-30T10:26:57.128Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/js/etudiant.js","status":200,"duration_ms":3}}
+{"ts":"2026-05-30T10:26:57.131Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/js/app.js","status":200,"duration_ms":1}}
+{"ts":"2026-05-30T10:26:59.232Z","session":"20260530-102633","kind":"ws_connect","data":{"client_id":"c0","url":"http://localhost:5501/index.html","user_agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36","viewport":[1366,641]}}
+{"ts":"2026-05-30T10:27:03.465Z","session":"20260530-102633","kind":"http_request","data":{"method":"GET","path":"/favicon.ico","status":404,"duration_ms":2}}

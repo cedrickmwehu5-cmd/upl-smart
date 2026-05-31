@@ -1,0 +1,26 @@
+{"ts":"2026-05-30T15:41:04.512Z","session":"20260530-154104","kind":"server_start","data":{"port":5500,"host":"0.0.0.0","root":"c:\\Users\\Cédrick-PC\\Desktop\\upl-smart","https":false,"live_reload":true}}
+{"ts":"2026-05-30T15:41:32.586Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T15:41:46.125Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/css/style.css","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T15:41:46.127Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/assets/logo.png","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T15:41:46.132Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/firebase-config.js","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T15:41:46.158Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/ui.js","status":304,"duration_ms":0}}
+{"ts":"2026-05-30T15:41:46.163Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/professeur.js","status":304,"duration_ms":0}}
+{"ts":"2026-05-30T15:41:47.301Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/etudiant.js","status":304,"duration_ms":2}}
+{"ts":"2026-05-30T15:41:47.313Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/app.js","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T15:41:48.830Z","session":"20260530-154104","kind":"ws_connect","data":{"client_id":"c0","url":"http://localhost:5500/","user_agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36","viewport":[1366,641]}}
+{"ts":"2026-05-30T15:41:49.048Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/favicon.ico","status":404,"duration_ms":0}}
+{"ts":"2026-05-30T15:43:44.754Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/","status":200,"duration_ms":2}}
+{"ts":"2026-05-30T15:43:45.279Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/css/style.css","status":200,"duration_ms":0}}
+{"ts":"2026-05-30T15:43:45.297Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/app.js","status":200,"duration_ms":0}}
+{"ts":"2026-05-30T15:43:45.303Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/assets/logo.png","status":200,"duration_ms":1}}
+{"ts":"2026-05-30T15:43:45.303Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/firebase-config.js","status":200,"duration_ms":1}}
+{"ts":"2026-05-30T15:43:45.304Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/ui.js","status":200,"duration_ms":1}}
+{"ts":"2026-05-30T15:43:45.305Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/professeur.js","status":200,"duration_ms":0}}
+{"ts":"2026-05-30T15:43:45.306Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/js/etudiant.js","status":200,"duration_ms":0}}
+{"ts":"2026-05-30T15:43:46.377Z","session":"20260530-154104","kind":"ws_connect","data":{"client_id":"c1","url":"http://172.20.10.4:5500/","user_agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1","viewport":[414,750]}}
+{"ts":"2026-05-30T15:43:46.447Z","session":"20260530-154104","kind":"http_request","data":{"method":"GET","path":"/favicon.ico","status":404,"duration_ms":0}}
+{"ts":"2026-05-30T15:59:44.766Z","session":"20260530-154104","kind":"ws_disconnect","data":{"client_id":"c0"}}
+{"ts":"2026-05-30T18:55:26.000Z","session":"20260530-154104","kind":"ws_disconnect","data":{"client_id":"c1"}}
+{"ts":"2026-05-30T18:55:28.349Z","session":"20260530-154104","kind":"ws_connect","data":{"client_id":"c2","url":"http://localhost:5500/","user_agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36","viewport":[1366,641]}}
+{"ts":"2026-05-30T19:19:08.117Z","session":"20260530-154104","kind":"js_error","data":{"message":"Uncaught ReferenceError: Html5Qrcode is not defined","source":"http://localhost:5500/js/etudiant.js","line":20,"col":5,"stack":"ReferenceError: Html5Qrcode is not defined\n    at activerCamera (http://localhost:5500/js/etudiant.js:20:5)\n    at HTMLButtonElement.onclick (http://localhost:5500/:150:43)"}}
+{"ts":"2026-05-30T19:41:04.688Z","session":"20260530-154104","kind":"ws_disconnect","data":{"client_id":"c2"}}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>UPL - Smart Presence Secure</title>
+
+    <!-- CSS principal -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <!-- QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- Scanner QR -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <!-- Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="card">
+
+    <img src="assets/logo.png" alt="UPL Logo" class="upl-logo">
+
+    <!-- HOME -->
+    <div id="view-home">
+        <h2>Plateforme Académique UPL</h2>
+
+        <button class="btn btn-blue" onclick="showView('view-stu-login')">
+            <i class="fas fa-user-graduate"></i>
+            Je suis Étudiant
+        </button>
+
+        <button class="btn btn-grey" onclick="showView('view-prof-login')">
+            <i class="fas fa-chalkboard-teacher"></i>
+            Je suis Enseignant
+        </button>
+    </div>
+
+    <!-- LOGIN PROF -->
+    <div id="view-prof-login" class="hidden">
+
+        <h2>Lancer une Session</h2>
+
+        <div class="input-group">
+            <label>Nom du Cours *</label>
+            <input type="text" id="p-cours" placeholder="Ex: Informatique">
+        </div>
+
+        <div class="input-group">
+            <label>Promotion cible</label>
+
+            <select id="p-class">
+                <option value="Bac 1 Technologie">Bac 1 Technologie (IA, GL, SI)</option>
+                <option value="Bac 1 IGAE">Bac 1 IGAE</option>
+                <option value="Bac 3 GL_IA">Bac 3 GL/IA</option>
+                <option value="Bac 3 SI">Bac 3 SI</option>
+                <option value="Bac 3 IAGE">Bac 3 IAGE</option>
+                <option value="Bac 4 SI">Bac 4 SI</option>
+                <option value="Bac 4 GL">Bac 4 GL</option>
+            </select>
+        </div>
+
+        <button class="btn btn-blue" onclick="ouvrirSession()">
+            Lancer l'appel
+        </button>
+
+        <button class="btn btn-grey" onclick="showView('view-home')">
+            Retour
+        </button>
+    </div>
+
+    <!-- DASHBOARD PROF -->
+    <div id="view-prof-dash" class="hidden">
+
+        <h2 id="dash-title">...</h2>
+
+        <div id="qrcode"></div>
+
+        <div id="qr-info"
+             style="font-size:11px; color:#1a4fa0; font-weight:bold; margin-bottom:15px;">
+        </div>
+
+        <button class="btn btn-green" onclick="telechargerExcel()">
+            <i class="fas fa-file-excel"></i>
+            Exporter la liste
+        </button>
+
+        <div style="max-height:250px; overflow-y:auto;">
+            <table id="list-presence">
+                <tbody id="presence-body"></tbody>
+            </table>
+        </div>
+
+        <button class="btn btn-red"
+                onclick="fermerSession()"
+                style="margin-top:20px;">
+            Clôturer
+        </button>
+    </div>
+
+    <!-- LOGIN ETUDIANT -->
+    <div id="view-stu-login" class="hidden">
+
+        <h2>Identification</h2>
+
+        <div class="input-group">
+            <label>Nom Complet *</label>
+            <input type="text"
+                   id="s-name"
+                   placeholder="Ex: Ton Nom">
+        </div>
+
+        <div class="input-group">
+            <label>Matricule *</label>
+            <input type="text"
+                   id="s-mat"
+                   placeholder="Ex: 24-UPL-000">
+        </div>
+
+        <div class="input-group">
+            <label>Ma Promotion *</label>
+
+            <select id="s-class">
+                <option value="Bac 1 Technologie">Bac 1 Technologie (IA, GL, SI)</option>
+                <option value="Bac 1 IGAE">Bac 1 IGAE</option>
+                <option value="Bac 3 GL_IA">Bac 3 GL/IA</option>
+                <option value="Bac 3 SI">Bac 3 SI</option>
+                <option value="Bac 3 IAGE">Bac 3 IAGE</option>
+                <option value="Bac 4 SI">Bac 4 SI</option>
+            </select>
+        </div>
+
+        <div id="reader" class="hidden"></div>
+
+        <button class="btn btn-blue"
+                id="btn-camera"
+                onclick="activerCamera()">
+            Scanner le Code
+        </button>
+
+        <button class="btn btn-grey"
+                onclick="location.reload()">
+            Annuler
+        </button>
+    </div>
+
+</div>
+
+<!-- Tes fichiers JS -->
+<script src="js/firebase-config.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/professeur.js"></script>
+<script src="js/etudiant.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

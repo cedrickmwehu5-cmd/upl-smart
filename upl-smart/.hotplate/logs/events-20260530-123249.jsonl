@@ -1,0 +1,37 @@
+{"ts":"2026-05-30T12:32:49.971Z","session":"20260530-123249","kind":"server_start","data":{"port":5500,"host":"0.0.0.0","root":"c:\\Users\\Cédrick-PC\\Desktop\\upl-smart","https":false,"live_reload":true}}
+{"ts":"2026-05-30T12:32:51.663Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T12:32:51.761Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/css/style.css","status":304,"duration_ms":5}}
+{"ts":"2026-05-30T12:32:52.057Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/assets/logo.png","status":304,"duration_ms":0}}
+{"ts":"2026-05-30T12:32:52.058Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/firebase-config.js","status":304,"duration_ms":2}}
+{"ts":"2026-05-30T12:32:52.394Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/ui.js","status":304,"duration_ms":2}}
+{"ts":"2026-05-30T12:32:52.423Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/professeur.js","status":304,"duration_ms":2}}
+{"ts":"2026-05-30T12:32:52.537Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/app.js","status":304,"duration_ms":3}}
+{"ts":"2026-05-30T12:32:53.502Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/etudiant.js","status":304,"duration_ms":1002}}
+{"ts":"2026-05-30T12:32:53.830Z","session":"20260530-123249","kind":"ws_connect","data":{"client_id":"c0","url":"http://localhost:5500/","user_agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36","viewport":[1366,641]}}
+{"ts":"2026-05-30T12:34:52.261Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/","status":200,"duration_ms":81}}
+{"ts":"2026-05-30T12:34:52.330Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T12:34:52.365Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/ui.js","status":304,"duration_ms":3}}
+{"ts":"2026-05-30T12:34:52.365Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/css/style.css","status":304,"duration_ms":4}}
+{"ts":"2026-05-30T12:34:52.365Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/app.js","status":304,"duration_ms":4}}
+{"ts":"2026-05-30T12:34:52.366Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/professeur.js","status":304,"duration_ms":3}}
+{"ts":"2026-05-30T12:34:52.366Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/firebase-config.js","status":304,"duration_ms":4}}
+{"ts":"2026-05-30T12:34:52.366Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/etudiant.js","status":304,"duration_ms":4}}
+{"ts":"2026-05-30T12:34:52.393Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/assets/logo.png","status":304,"duration_ms":0}}
+{"ts":"2026-05-30T12:34:55.104Z","session":"20260530-123249","kind":"ws_connect","data":{"client_id":"c1","url":"http://172.30.52.25:5500/","user_agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1","viewport":[414,750]}}
+{"ts":"2026-05-30T12:35:25.979Z","session":"20260530-123249","kind":"console_log","data":{"level":"warn","message":"[2026-05-30T12:35:25.243Z]  @firebase/database: FIREBASE WARNING: set at /active_session/Anglais failed: permission_denied "}}
+{"ts":"2026-05-30T12:35:39.353Z","session":"20260530-123249","kind":"console_log","data":{"level":"warn","message":"[2026-05-30T12:35:38.636Z]  @firebase/database: FIREBASE WARNING: set at /active_session/Anglais failed: permission_denied "}}
+{"ts":"2026-05-30T12:35:49.761Z","session":"20260530-123249","kind":"console_log","data":{"level":"warn","message":"[2026-05-30T12:35:48.999Z]  @firebase/database: FIREBASE WARNING: set at /active_session/Anglais failed: permission_denied "}}
+{"ts":"2026-05-30T12:35:49.822Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/","status":200,"duration_ms":2}}
+{"ts":"2026-05-30T12:35:50.135Z","session":"20260530-123249","kind":"ws_disconnect","data":{"client_id":"c1"}}
+{"ts":"2026-05-30T12:35:50.175Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/firebase-config.js","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T12:35:50.175Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/etudiant.js","status":304,"duration_ms":0}}
+{"ts":"2026-05-30T12:35:50.175Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/css/style.css","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T12:35:50.175Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/professeur.js","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T12:35:50.175Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/ui.js","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T12:35:50.175Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/assets/logo.png","status":304,"duration_ms":1}}
+{"ts":"2026-05-30T12:35:50.371Z","session":"20260530-123249","kind":"http_request","data":{"method":"GET","path":"/js/app.js","status":304,"duration_ms":0}}
+{"ts":"2026-05-30T12:35:58.689Z","session":"20260530-123249","kind":"ws_connect","data":{"client_id":"c2","url":"http://172.30.52.25:5500/","user_agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1","viewport":[414,750]}}
+{"ts":"2026-05-30T12:36:17.250Z","session":"20260530-123249","kind":"ws_disconnect","data":{"client_id":"c2"}}
+{"ts":"2026-05-30T12:42:08.389Z","session":"20260530-123249","kind":"ws_connect","data":{"client_id":"c3","url":"http://172.30.52.25:5500/","user_agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1","viewport":[414,750]}}
+{"ts":"2026-05-30T12:42:15.993Z","session":"20260530-123249","kind":"ws_disconnect","data":{"client_id":"c3"}}
+{"ts":"2026-05-30T13:02:26.824Z","session":"20260530-123249","kind":"ws_disconnect","data":{"client_id":"c0"}}
