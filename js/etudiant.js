@@ -2,22 +2,14 @@
 
 let currentFacingMode = 'environment';
 let currentCameraId = null;
-let scanErrorBuffered = false;
-
-function computeQrBoxSize() {
-    const maxSize = 320;
-    const minSize = 250;
-    const width = Math.min(maxSize, Math.max(minSize, window.innerWidth - 40));
-    return {
-        width,
-        height: width
-    };
-}
 
 function getScanConfig() {
     return {
-        fps: 30,
-        qrbox: computeQrBoxSize(),
+        fps: 25,
+        qrbox: {
+            width: 300,
+            height: 300
+        },
         videoConstraints: {
             facingMode: currentFacingMode
         }
@@ -46,34 +38,20 @@ function activerCamera() {
 
     setScanStatus('Recherche de la caméra…');
 
-    Html5Qrcode.getCameras()
-        .then(cameras => {
-            currentCameraId = null;
-            const cameraConfig = pickCameraConfig(cameras, currentFacingMode);
-            if (typeof cameraConfig === 'string') {
-                currentCameraId = cameraConfig;
-            }
-            return html5QrScanner.start(
-                cameraConfig,
-                getScanConfig(),
-                onScanSuccess,
-                onScanError
-            );
-        })
-        .catch(err => {
-            console.warn('Camera selection failed, fallback to facingMode', err);
-            currentCameraId = null;
-            return html5QrScanner.start(
-                { facingMode: currentFacingMode },
-                getScanConfig(),
-                onScanSuccess,
-                onScanError
-            );
-        })
+    const cameraConfig = { facingMode: 'environment' };
+    currentCameraId = null;
+
+    html5QrScanner.start(
+        cameraConfig,
+        getScanConfig(),
+        onScanSuccess,
+        onScanError
+    )
         .then(() => {
             showCameraToggle(true);
         })
         .catch(err => {
+            console.warn('Camera start failed', err);
             setScanStatus('Impossible d’accéder à la caméra : ' + (err.message || err), true);
             document.getElementById('btn-camera')
                 .classList.remove('hidden');
@@ -81,30 +59,6 @@ function activerCamera() {
                 .classList.add('hidden');
             showCameraToggle(false);
         });
-}
-
-function pickCameraConfig(cameras, facingMode) {
-    const fallback = { facingMode };
-
-    if (!cameras || !cameras.length) {
-        return fallback;
-    }
-
-    const isBack = facingMode === 'environment';
-    const preferredRegex = isBack
-        ? /back|rear|arrière|environment/i
-        : /front|user|selfie|avant/i;
-
-    const match = cameras.find(c => preferredRegex.test(c.label || c.id || ''));
-    if (match && match.id) {
-        return match.id;
-    }
-
-    if (isBack) {
-        return cameras[cameras.length - 1].id || fallback;
-    }
-
-    return cameras[0].id || fallback;
 }
 
 function showCameraToggle(show) {
@@ -138,13 +92,8 @@ function toggleCameraFacing() {
     setScanStatus('Changement de caméra…');
     html5QrScanner.stop()
         .then(() => html5QrScanner.clear())
-        .then(() => Html5Qrcode.getCameras())
-        .then(cameras => {
-            currentCameraId = null;
-            const cameraConfig = pickCameraConfig(cameras, currentFacingMode);
-            if (typeof cameraConfig === 'string') {
-                currentCameraId = cameraConfig;
-            }
+        .then(() => {
+            const cameraConfig = { facingMode: currentFacingMode };
             return html5QrScanner.start(
                 cameraConfig,
                 getScanConfig(),
@@ -178,12 +127,6 @@ function clearScanStatus() {
 
 function onScanError(errorMessage) {
     console.debug('QR scan error:', errorMessage);
-    if (scanErrorBuffered) return;
-    scanErrorBuffered = true;
-    setScanStatus('Lecture en cours…', false);
-    setTimeout(() => {
-        scanErrorBuffered = false;
-    }, 1000);
 }
 
 
@@ -192,8 +135,11 @@ function onScanSuccess(decodedText) {
 
     if (scanLock) return;
 
-    setScanStatus('QR détecté, validation en cours...');
     scanLock = true;
+    if (html5QrScanner) {
+        html5QrScanner.stop().catch(() => {});
+    }
+    setScanStatus('QR détecté, validation en cours...');
 
     db.ref('active_session')
         .once('value', snap => {
