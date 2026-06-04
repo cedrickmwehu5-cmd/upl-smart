@@ -18,17 +18,20 @@ function ouvrirSession() {
     document.getElementById('dash-title')
         .innerText = rawCours;
 
+    console.log('[Session] ouvrirSession', { cours, promo });
+
     showView('view-prof-dash');
 
     // QR initial
     refreshQR(cours, promo);
 
-    // Rotation QR
-    qrInterval =
-        setInterval(() => refreshQR(cours, promo), 30000);
+    // Ne pas tourner le QR automatiquement : le token doit rester valide pendant la validation.
+    qrInterval = null;
 
     // Présences temps réel
-    db.ref('presences/' + cours)
+    const presencesPath = 'presences/' + cours;
+    console.log('[Firebase] lecture temps réel presences', presencesPath);
+    db.ref(presencesPath)
         .on('value', snap => {
 
             const body =
@@ -109,18 +112,19 @@ function refreshQR(cours, promo) {
         .innerText =
         "TOKEN ACTIF : " + token;
 
-    // Session active avec promo
-    db.ref('active_session/' + cours)
-        .set({
-            token: token,
-            promo: promo
-        })
+    const activeSessionPath = 'active_session/' + cours;
+    const sessionPayload = { token: token, promo: promo };
+
+    console.log('[Firebase] écriture active_session', { path: activeSessionPath, payload: sessionPayload });
+
+    db.ref(activeSessionPath)
+        .set(sessionPayload)
         .then(() => {
             console.log('[Firebase] session active créée', { cours, promo, token });
         })
         .catch(err => {
             console.error('[Firebase] impossible de créer la session active', err, { cours, promo, token });
-            alert('Erreur Firebase lors de la création de la session.');
+            alert('Impossible de créer la session. Vérifiez les règles de sécurité.');
         });
 }
 
@@ -134,7 +138,9 @@ function telechargerExcel() {
     const cours =
         rawCours.replace(/[.#$[\]/]/g, '_');
 
-    db.ref('presences/' + cours)
+    const presencesPath = 'presences/' + cours;
+    console.log('[Firebase] lecture export Excel', presencesPath);
+    db.ref(presencesPath)
         .once('value', snap => {
 
             let data = [];
@@ -178,10 +184,14 @@ function fermerSession() {
 
     clearInterval(qrInterval);
 
-    db.ref('active_session/' + cours)
+    const activeSessionPath = 'active_session/' + cours;
+    const presencesPath = 'presences/' + cours;
+    console.log('[Firebase] suppression session active', activeSessionPath);
+    db.ref(activeSessionPath)
         .remove();
 
-    db.ref('presences/' + cours)
+    console.log('[Firebase] suppression presences', presencesPath);
+    db.ref(presencesPath)
         .remove();
 
     location.reload();

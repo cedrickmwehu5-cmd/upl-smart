@@ -205,6 +205,12 @@ async function onScanSuccess(decodedText) {
     }
     scanLock = true;
 
+    const promoEtudiant = document.getElementById('s-class').value;
+    const matricule = document.getElementById('s-mat').value.trim();
+    const nom = document.getElementById('s-name').value.trim();
+
+    console.log('[QR] token scanné', { token, promoEtudiant, matricule, nom });
+
     if (html5QrScanner) {
         try {
             await html5QrScanner.stop();
@@ -220,9 +226,7 @@ async function onScanSuccess(decodedText) {
 
     setScanStatus('Validation en cours…');
 
-    const promoEtudiant = document.getElementById('s-class').value;
-    const matricule = document.getElementById('s-mat').value.trim();
-    const nom = document.getElementById('s-name').value.trim();
+    console.log('[QR] préparation validation', { token, promoEtudiant, matricule, nom });
 
     validatePresence(token, promoEtudiant, matricule, nom)
         .then(() => {
@@ -253,7 +257,9 @@ async function onScanSuccess(decodedText) {
 
 function validatePresence(token, promoEtudiant, matricule, nom) {
     console.log('[Firebase] validatePresence démarrée', { token, promoEtudiant, matricule });
-    return db.ref('active_session')
+    const activeSessionPath = 'active_session';
+    console.log('[Firebase] lecture active_session', activeSessionPath);
+    return db.ref(activeSessionPath)
         .once('value')
         .then(snap => {
             console.log('[Firebase] active_session snapshot reçu', snap.exists());
@@ -280,7 +286,9 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
             return coursTrouve;
         })
         .then(coursTrouve => {
-            return db.ref('presences/' + coursTrouve)
+            const presencesPath = 'presences/' + coursTrouve;
+            console.log('[Firebase] lecture presences', { path: presencesPath, matricule });
+            return db.ref(presencesPath)
                 .orderByChild('matricule')
                 .equalTo(matricule)
                 .once('value')
@@ -295,14 +303,16 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
 }
 
 function valider(coursId, nom, matricule, promo) {
-    console.log('[Firebase] valider présence', { coursId, nom, matricule, promo });
+    const presencesPath = 'presences/' + coursId;
+    const payload = {
+        nom: nom,
+        matricule: matricule,
+        promo: promo,
+        heure: new Date().toLocaleTimeString('fr-FR')
+    };
+    console.log('[Firebase] écriture présence', { path: presencesPath, payload });
     return withTimeout(
-        db.ref('presences/' + coursId).push({
-            nom: nom,
-            matricule: matricule,
-            promo: promo,
-            heure: new Date().toLocaleTimeString('fr-FR')
-        }).then(ref => {
+        db.ref(presencesPath).push(payload).then(ref => {
             console.log('[Firebase] présence enregistrée', { coursId, key: ref.key });
             return ref;
         }),
