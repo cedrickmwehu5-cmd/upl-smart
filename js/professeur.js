@@ -98,7 +98,10 @@ function refreshQR(cours, promo) {
         {
             text: token,
             width: size,
-            height: size
+            height: size,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
         }
     );
 

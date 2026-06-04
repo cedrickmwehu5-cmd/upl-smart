@@ -5,18 +5,49 @@ let currentCameraId = null;
 
 function getScanConfig() {
     return {
-        fps: 25,
+        fps: 10,
         qrbox: {
-            width: 300,
-            height: 300
+            width: 260,
+            height: 260
         },
+        aspectRatio: 1.333,
+        disableFlip: false,
         videoConstraints: {
-            facingMode: currentFacingMode
+            facingMode: {
+                exact: currentFacingMode
+            }
         }
     };
 }
 
-function activerCamera() {
+async function resolvePreferredCameraId() {
+    try {
+        const cameras = await Html5Qrcode.getCameras();
+        console.log('[QR] getCameras()', cameras);
+        if (!cameras || cameras.length === 0) {
+            return null;
+        }
+        const preferred = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[0];
+        return preferred.deviceId || null;
+    } catch (err) {
+        console.warn('[QR] getCameras() failed', err);
+        return null;
+    }
+}
+
+function getCameraConfig() {
+    if (currentCameraId) {
+        return { deviceId: { exact: currentCameraId } };
+    }
+
+    return {
+        facingMode: {
+            exact: currentFacingMode
+        }
+    };
+}
+
+async function activerCamera() {
 
     const name =
         document.getElementById('s-name').value.trim();
@@ -27,36 +58,49 @@ function activerCamera() {
     if (!name || !mat)
         return alert("Remplis tes infos avant !");
 
+    const readerElement = document.getElementById('reader');
+    if (!readerElement) {
+        console.error('[QR] Element reader introuvable');
+        return alert('Erreur interne : élément de scan non trouvé.');
+    }
+
     document.getElementById('btn-camera')
         .classList.add('hidden');
 
-    document.getElementById('reader')
-        .classList.remove('hidden');
+    readerElement.classList.remove('hidden');
+    readerElement.style.minHeight = '260px';
+
+    clearScanStatus();
 
     html5QrScanner =
-        new Html5Qrcode("reader");
+        new Html5Qrcode("reader", true);
 
     setScanStatus('Recherche de la caméra…');
+    console.log('[QR] activerCamera() currentFacingMode=', currentFacingMode);
 
-    const cameraConfig = { facingMode: 'environment' };
-    currentCameraId = null;
+    currentCameraId = await resolvePreferredCameraId();
+    const cameraConfig = getCameraConfig();
+    const scanConfig = getScanConfig();
+
+    console.log('[QR] cameraConfig=', cameraConfig, 'scanConfig=', scanConfig, 'currentCameraId=', currentCameraId);
 
     html5QrScanner.start(
         cameraConfig,
-        getScanConfig(),
+        scanConfig,
         onScanSuccess,
         onScanError
     )
         .then(() => {
             showCameraToggle(true);
+            setScanStatus('Caméra active, place le QR code dans le cadre.');
+            console.log('[QR] Html5Qrcode.start() succeeded');
         })
         .catch(err => {
-            console.warn('Camera start failed', err);
+            console.error('[QR] Camera start failed', err);
             setScanStatus('Impossible d’accéder à la caméra : ' + (err.message || err), true);
             document.getElementById('btn-camera')
                 .classList.remove('hidden');
-            document.getElementById('reader')
-                .classList.add('hidden');
+            readerElement.classList.add('hidden');
             showCameraToggle(false);
         });
 }
@@ -85,6 +129,7 @@ function updateToggleButtonText() {
 
 function toggleCameraFacing() {
     currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    currentCameraId = null;
     updateToggleButtonText();
 
     if (!html5QrScanner) return;
@@ -92,8 +137,10 @@ function toggleCameraFacing() {
     setScanStatus('Changement de caméra…');
     html5QrScanner.stop()
         .then(() => html5QrScanner.clear())
-        .then(() => {
-            const cameraConfig = { facingMode: currentFacingMode };
+        .then(async () => {
+            currentCameraId = await resolvePreferredCameraId();
+            const cameraConfig = getCameraConfig();
+            console.log('[QR] toggleCameraFacing() new config', cameraConfig, getScanConfig());
             return html5QrScanner.start(
                 cameraConfig,
                 getScanConfig(),
@@ -126,7 +173,7 @@ function clearScanStatus() {
 
 
 function onScanError(errorMessage) {
-    console.debug('QR scan error:', errorMessage);
+    console.warn('[QR] onScanError', errorMessage);
 }
 
 function withTimeout(promise, ms) {
@@ -148,15 +195,27 @@ function withTimeout(promise, ms) {
 }
 
 
-function onScanSuccess(decodedText) {
+async function onScanSuccess(decodedText) {
+    console.log('[QR] onScanSuccess', decodedText);
     const token = decodedText.trim();
 
-    if (scanLock) return;
+    if (scanLock) {
+        console.log('[QR] scanLock active, ignoring duplicate scan');
+        return;
+    }
     scanLock = true;
 
     if (html5QrScanner) {
-        html5QrScanner.stop().catch(() => {});
-        html5QrScanner.clear().catch(() => {});
+        try {
+            await html5QrScanner.stop();
+        } catch (err) {
+            console.warn('[QR] stop() failed after success', err);
+        }
+        try {
+            await html5QrScanner.clear();
+        } catch (err) {
+            console.warn('[QR] clear() failed after success', err);
+        }
     }
 
     setScanStatus('Validation en cours…');
@@ -171,6 +230,7 @@ function onScanSuccess(decodedText) {
             setTimeout(() => location.reload(), 1400);
         })
         .catch(err => {
+            console.error('[QR] validatePresence failed', err);
             if (err.message === 'invalid_qr') {
                 setScanStatus('QR Code expiré ou incorrect.', true);
                 alert('QR Code expiré ou incorrect.');
@@ -184,7 +244,6 @@ function onScanSuccess(decodedText) {
                 setScanStatus('Temps dépassé. Réessaie, le réseau est lent.', true);
                 alert('La validation a pris trop de temps. Réessaie.');
             } else {
-                console.error('Validation failed:', err);
                 setScanStatus('Échec de l’inscription, vérifie ta connexion.', true);
                 alert('Erreur de validation : vérifie ta connexion et réessaye.');
             }
