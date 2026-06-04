@@ -152,63 +152,23 @@ function onScanSuccess(decodedText) {
     const token = decodedText.trim();
 
     if (scanLock) return;
-
     scanLock = true;
+
     if (html5QrScanner) {
         html5QrScanner.stop().catch(() => {});
+        html5QrScanner.clear().catch(() => {});
     }
-    // Affiche immédiatement le succès (pas d'attente)
-    setScanStatus('✅ Présence validée avec succès !');
-    
-    // Redirection après 1.5s
-    setTimeout(() => location.reload(), 1500);
 
-    // Enregistrement en arrière-plan (asynchrone, non-bloquant)
+    setScanStatus('Validation en cours…');
+
     const promoEtudiant = document.getElementById('s-class').value;
     const matricule = document.getElementById('s-mat').value.trim();
-    const nom = document.getElementById('s-name').value;
+    const nom = document.getElementById('s-name').value.trim();
 
-    db.ref('active_session')
-        .once('value')
-        .then(snap => {
-            let coursTrouve = null;
-            let sessionData = null;
-
-            snap.forEach(child => {
-                if (child.val().token === token) {
-                    coursTrouve = child.key;
-                    sessionData = child.val();
-                }
-            });
-
-            // Validations en background
-            if (!coursTrouve) {
-                console.warn('QR Code expiré ou incorrect');
-                return null;
-            }
-
-            if (sessionData.promo !== promoEtudiant) {
-                console.warn('Promotion invalide');
-                return null;
-            }
-
-            return coursTrouve;
-        })
-        .then(coursTrouve => {
-            if (!coursTrouve) return;
-                .equalTo(matricule)
-                .once('value')
-                .then(check => ({ coursTrouve, check }));
-        })
-        .then(({ coursTrouve, check }) => {
-            if (check.exists()) {
-                throw new Error('duplicate');
-            }
-            return valider(coursTrouve);
-        })
+    validatePresence(token, promoEtudiant, matricule, nom)
         .then(() => {
             setScanStatus('✅ Présence validée !');
-            setTimeout(() => location.reload(), 1200);
+            setTimeout(() => location.reload(), 1400);
         })
         .catch(err => {
             if (err.message === 'invalid_qr') {
@@ -218,9 +178,8 @@ function onScanSuccess(decodedText) {
                 setScanStatus('Ce QR ne correspond pas à ta promotion.', true);
                 alert('Ce QR ne correspond pas à ta promotion.');
             } else if (err.message === 'duplicate') {
+                setScanStatus('Tu es déjà inscrit sur la liste.', true);
                 alert('Tu es déjà inscrit sur la liste !');
-                location.reload();
-                return;
             } else if (err.message === 'timeout') {
                 setScanStatus('Temps dépassé. Réessaie, le réseau est lent.', true);
                 alert('La validation a pris trop de temps. Réessaie.');
@@ -233,23 +192,52 @@ function onScanSuccess(decodedText) {
         });
 }
 
+function validatePresence(token, promoEtudiant, matricule, nom) {
+    return db.ref('active_session')
+        .once('value')
+        .then(snap => {
+            let coursTrouve = null;
+            let sessionData = null;
 
-function valider(coursId) {
+            snap.forEach(child => {
+                if (child.val().token === token) {
+                    coursTrouve = child.key;
+                    sessionData = child.val();
+                }
+            });
+
+            if (!coursTrouve) {
+                throw new Error('invalid_qr');
+            }
+
+            if (sessionData.promo !== promoEtudiant) {
+                throw new Error('invalid_promo');
+            }
+
+            return coursTrouve;
+        })
+        .then(coursTrouve => {
+            return db.ref('presences/' + coursTrouve)
+                .orderByChild('matricule')
+                .equalTo(matricule)
+                .once('value')
+                .then(check => {
+                    if (check.exists()) {
+                        throw new Error('duplicate');
+                    }
+                    return coursTrouve;
+                });
+        })
+        .then(coursTrouve => valider(coursTrouve, nom, matricule, promoEtudiant));
+}
+
+function valider(coursId, nom, matricule, promo) {
     return withTimeout(
         db.ref('presences/' + coursId).push({
-
-        nom:
-            document.getElementById('s-name').value,
-
-        matricule:
-            document.getElementById('s-mat').value,
-
-        promo:
-            document.getElementById('s-class').value,
-
-        heure:
-            new Date()
-                .toLocaleTimeString('fr-FR')
+            nom: nom,
+            matricule: matricule,
+            promo: promo,
+            heure: new Date().toLocaleTimeString('fr-FR')
         }),
         4000
     );
