@@ -252,9 +252,11 @@ async function onScanSuccess(decodedText) {
 }
 
 function validatePresence(token, promoEtudiant, matricule, nom) {
+    console.log('[Firebase] validatePresence démarrée', { token, promoEtudiant, matricule });
     return db.ref('active_session')
         .once('value')
         .then(snap => {
+            console.log('[Firebase] active_session snapshot reçu', snap.exists());
             let coursTrouve = null;
             let sessionData = null;
 
@@ -266,10 +268,12 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
             });
 
             if (!coursTrouve) {
+                console.warn('[Firebase] token introuvable dans active_session', token);
                 throw new Error('invalid_qr');
             }
 
             if (sessionData.promo !== promoEtudiant) {
+                console.warn('[Firebase] promo incorrecte', { attendu: sessionData.promo, reçu: promoEtudiant });
                 throw new Error('invalid_promo');
             }
 
@@ -291,12 +295,16 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
 }
 
 function valider(coursId, nom, matricule, promo) {
+    console.log('[Firebase] valider présence', { coursId, nom, matricule, promo });
     return withTimeout(
         db.ref('presences/' + coursId).push({
             nom: nom,
             matricule: matricule,
             promo: promo,
             heure: new Date().toLocaleTimeString('fr-FR')
+        }).then(ref => {
+            console.log('[Firebase] présence enregistrée', { coursId, key: ref.key });
+            return ref;
         }),
         4000
     );

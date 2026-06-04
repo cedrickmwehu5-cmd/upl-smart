@@ -114,6 +114,13 @@ function refreshQR(cours, promo) {
         .set({
             token: token,
             promo: promo
+        })
+        .then(() => {
+            console.log('[Firebase] session active créée', { cours, promo, token });
+        })
+        .catch(err => {
+            console.error('[Firebase] impossible de créer la session active', err, { cours, promo, token });
+            alert('Erreur Firebase lors de la création de la session.');
         });
 }
 
