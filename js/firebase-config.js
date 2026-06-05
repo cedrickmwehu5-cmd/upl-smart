@@ -10,11 +10,27 @@ const firebaseConfig = {
 };
 
 // Initialisation
+console.log('[Firebase] Configuration détectée :', firebaseConfig);
+console.log('[Firebase] Démarrage de firebase.initializeApp()');
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+console.log('[Firebase] firebase.initializeApp() appelé avec succès');
 
-// Vérification de la connexion à Realtime Database
+const db = firebase.database();
+console.log('[Firebase] Instance Realtime Database créée :', db ? 'OK' : 'KO');
+
+// Test d'écriture simple pour vérifier la connexion et l'autorisation
 if (db && db.ref) {
+  db.ref('test').set({
+      message: 'Connexion OK'
+    })
+    .then(() => {
+      console.log('✅ Écriture Firebase OK');
+    })
+    .catch((error) => {
+      console.error('❌ Erreur Firebase :', error);
+    });
+
+  // Vérification de la connexion à Realtime Database
   db.ref('.info/connected').once('value')
     .then(snapshot => {
       console.log('[Firebase] Realtime Database connectée :', snapshot.val());
