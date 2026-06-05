@@ -3,6 +3,14 @@
 let currentFacingMode = 'environment';
 let currentCameraId = null;
 
+function getTodayDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function getScanConfig() {
     return {
         fps: 10,
@@ -262,6 +270,8 @@ async function onScanSuccess(decodedText) {
 }
 
 function validatePresence(token, promoEtudiant, matricule, nom) {
+    const dateJour = getTodayDate();
+    console.log('[Presence] Date active :', dateJour);
     console.log('[Firebase] validatePresence démarrée', { token, promoEtudiant, matricule });
     const activeSessionPath = 'active_session';
     console.log('[Firebase] lecture active_session', activeSessionPath);
@@ -292,11 +302,11 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
             const sessionType = sessionData.type || 'ENTREE';
             console.log('[Firebase] type de session récupéré', sessionType);
 
-            return { coursTrouve, sessionType };
+            return { coursTrouve, sessionType, dateJour };
         })
-        .then(({ coursTrouve, sessionType }) => {
-            const presencesPath = 'presences/' + coursTrouve;
-            console.log('[Firebase] lecture presences', { path: presencesPath, matricule, sessionType });
+        .then(({ coursTrouve, sessionType, dateJour }) => {
+            const presencesPath = 'presences/' + coursTrouve + '/' + dateJour;
+            console.log('[Firebase] Lecture :', presencesPath);
             return db.ref(presencesPath)
                 .orderByChild('matricule')
                 .equalTo(matricule)
@@ -338,15 +348,17 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
 }
 
 function valider(coursId, nom, matricule, promo, type) {
-    const presencesPath = 'presences/' + coursId;
+    const dateJour = getTodayDate();
+    const presencesPath = 'presences/' + coursId + '/' + dateJour;
     const payload = {
         nom: nom,
         matricule: matricule,
         promo: promo,
+        date: dateJour,
         type: type,
         heure: new Date().toLocaleTimeString('fr-FR')
     };
-    console.log('[Firebase] écriture présence', { path: presencesPath, payload });
+    console.log('[Firebase] Écriture :', presencesPath, payload);
     return withTimeout(
         db.ref(presencesPath).push(payload).then(ref => {
             console.log('[Firebase] présence enregistrée', { coursId, key: ref.key, type: type });

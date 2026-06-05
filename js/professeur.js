@@ -1,5 +1,13 @@
 // --- LOGIQUE PROFESSEUR ---
 
+function getTodayDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function ouvrirSession() {
 
     const rawCours =
@@ -21,7 +29,9 @@ function ouvrirSession() {
     document.getElementById('dash-title')
         .innerText = rawCours;
 
-    console.log('[Session] ouvrirSession', { cours, promo, type });
+    const dateJour = getTodayDate();
+    console.log('[Presence] Date active :', dateJour);
+    console.log('[Session] ouvrirSession', { cours, promo, type, dateJour });
 
     showView('view-prof-dash');
 
@@ -39,8 +49,8 @@ function ouvrirSession() {
     console.log('[QR] setInterval lancé pour régénérer le QR toutes les 15 secondes', { intervalId: qrInterval, type });
 
     // Présences temps réel
-    const presencesPath = 'presences/' + cours;
-    console.log('[Firebase] lecture temps réel presences', presencesPath);
+    const presencesPath = 'presences/' + cours + '/' + dateJour;
+    console.log('[Firebase] Lecture :', presencesPath);
     db.ref(presencesPath)
         .on('value', snap => {
 
@@ -158,20 +168,30 @@ function telechargerExcel() {
     const cours =
         rawCours.replace(/[.#$[\]/]/g, '_');
 
-    const presencesPath = 'presences/' + cours;
-    console.log('[Firebase] lecture export Excel', presencesPath);
+    const dateJour = getTodayDate();
+    console.log('[Presence] Date active :', dateJour);
+    const presencesPath = 'presences/' + cours + '/' + dateJour;
+    console.log('[Firebase] Lecture :', presencesPath);
     db.ref(presencesPath)
         .once('value', snap => {
 
             let data = [];
 
-            snap.forEach(c =>
-                data.push(c.val())
-            );
+            snap.forEach(c => {
+                const item = c.val();
+                data.push({
+                    nom: item.nom,
+                    matricule: item.matricule,
+                    promo: item.promo,
+                    date: item.date || dateJour,
+                    heure: item.heure,
+                    type: item.type || 'ENTREE'
+                });
+            });
 
             const ws =
                 XLSX.utils.json_to_sheet(data, {
-                    header: ['nom', 'matricule', 'promo', 'type', 'heure']
+                    header: ['nom', 'matricule', 'promo', 'date', 'heure', 'type']
                 });
 
             const wb =
