@@ -241,9 +241,15 @@ async function onScanSuccess(decodedText) {
             } else if (err.message === 'invalid_promo') {
                 setScanStatus('Ce QR ne correspond pas à ta promotion.', true);
                 alert('Ce QR ne correspond pas à ta promotion.');
-            } else if (err.message === 'duplicate') {
-                setScanStatus('Tu es déjà inscrit sur la liste.', true);
-                alert('Tu es déjà inscrit sur la liste !');
+            } else if (err.message === 'duplicate_entry') {
+                setScanStatus('Tu as déjà enregistré ton entrée.', true);
+                alert('Tu as déjà enregistré ton entrée.');
+            } else if (err.message === 'missing_entry') {
+                setScanStatus('Vous devez d\'abord enregistrer votre présence d\'entrée.', true);
+                alert('Vous devez d\'abord enregistrer votre présence d\'entrée.');
+            } else if (err.message === 'duplicate_exit') {
+                setScanStatus('Tu as déjà enregistré ta sortie.', true);
+                alert('Tu as déjà enregistré ta sortie.');
             } else if (err.message === 'timeout') {
                 setScanStatus('Temps dépassé. Réessaie, le réseau est lent.', true);
                 alert('La validation a pris trop de temps. Réessaie.');
@@ -283,37 +289,67 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
                 throw new Error('invalid_promo');
             }
 
-            return coursTrouve;
+            const sessionType = sessionData.type || 'ENTREE';
+            console.log('[Firebase] type de session récupéré', sessionType);
+
+            return { coursTrouve, sessionType };
         })
-        .then(coursTrouve => {
+        .then(({ coursTrouve, sessionType }) => {
             const presencesPath = 'presences/' + coursTrouve;
-            console.log('[Firebase] lecture presences', { path: presencesPath, matricule });
+            console.log('[Firebase] lecture presences', { path: presencesPath, matricule, sessionType });
             return db.ref(presencesPath)
                 .orderByChild('matricule')
                 .equalTo(matricule)
                 .once('value')
                 .then(check => {
-                    if (check.exists()) {
-                        throw new Error('duplicate');
+                    let foundEntry = false;
+                    let foundExit = false;
+
+                    check.forEach(child => {
+                        const item = child.val();
+                        if (item.type === 'ENTREE') {
+                            foundEntry = true;
+                        }
+                        if (item.type === 'SORTIE') {
+                            foundExit = true;
+                        }
+                    });
+
+                    if (sessionType === 'ENTREE') {
+                        if (foundEntry) {
+                            console.warn('[Firebase] tentative d\'entrée en double', matricule);
+                            throw new Error('duplicate_entry');
+                        }
+                    } else if (sessionType === 'SORTIE') {
+                        if (!foundEntry) {
+                            console.warn('[Firebase] sortie sans entrée', matricule);
+                            throw new Error('missing_entry');
+                        }
+                        if (foundExit) {
+                            console.warn('[Firebase] tentative de sortie en double', matricule);
+                            throw new Error('duplicate_exit');
+                        }
                     }
-                    return coursTrouve;
+
+                    return { coursTrouve, sessionType };
                 });
         })
-        .then(coursTrouve => valider(coursTrouve, nom, matricule, promoEtudiant));
+        .then(({ coursTrouve, sessionType }) => valider(coursTrouve, nom, matricule, promoEtudiant, sessionType));
 }
 
-function valider(coursId, nom, matricule, promo) {
+function valider(coursId, nom, matricule, promo, type) {
     const presencesPath = 'presences/' + coursId;
     const payload = {
         nom: nom,
         matricule: matricule,
         promo: promo,
+        type: type,
         heure: new Date().toLocaleTimeString('fr-FR')
     };
     console.log('[Firebase] écriture présence', { path: presencesPath, payload });
     return withTimeout(
         db.ref(presencesPath).push(payload).then(ref => {
-            console.log('[Firebase] présence enregistrée', { coursId, key: ref.key });
+            console.log('[Firebase] présence enregistrée', { coursId, key: ref.key, type: type });
             return ref;
         }),
         4000

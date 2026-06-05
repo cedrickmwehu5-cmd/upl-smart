@@ -73,6 +73,14 @@
             </select>
         </div>
 
+        <div class="input-group">
+            <label>Type de présence</label>
+            <select id="p-type">
+                <option value="ENTREE">ENTREE</option>
+                <option value="SORTIE">SORTIE</option>
+            </select>
+        </div>
+
         <button class="btn btn-blue" onclick="ouvrirSession()">
             Lancer l'appel
         </button>
@@ -102,6 +110,14 @@
 
         <div style="max-height:250px; overflow-y:auto;">
             <table id="list-presence">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Matricule</th>
+                        <th>Type</th>
+                        <th>Heure</th>
+                    </tr>
+                </thead>
                 <tbody id="presence-body"></tbody>
             </table>
         </div>
