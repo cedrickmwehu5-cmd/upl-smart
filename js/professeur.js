@@ -194,7 +194,7 @@ function telechargerExcel() {
 function fermerSession() {
 
     if (!confirm(
-        "Clôturer et effacer les données de cette séance ?"
+        "Clôturer cette session ? Les présences enregistrées resteront conservées."
     )) return;
 
     const rawCours =
@@ -211,14 +211,15 @@ function fermerSession() {
     }
 
     const activeSessionPath = 'active_session/' + cours;
-    const presencesPath = 'presences/' + cours;
     console.log('[Firebase] suppression session active', activeSessionPath);
     db.ref(activeSessionPath)
-        .remove();
-
-    console.log('[Firebase] suppression presences', presencesPath);
-    db.ref(presencesPath)
-        .remove();
-
-    location.reload();
+        .remove()
+        .then(() => {
+            console.log('[Firebase] session active supprimée', { cours });
+            location.reload();
+        })
+        .catch(err => {
+            console.error('[Firebase] impossible de supprimer la session active', err, { cours });
+            alert('Impossible de clôturer la session. Vérifiez les règles de sécurité.');
+        });
 }
