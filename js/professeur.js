@@ -1,5 +1,74 @@
 // --- LOGIQUE PROFESSEUR ---
 
+let currentTeacher = null;
+
+function normalizeList(value) {
+    if (Array.isArray(value)) {
+        return value
+            .map(item => String(item).trim())
+            .filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+        return value
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean);
+    }
+
+    return [];
+}
+
+function fillTeacherSelects(teacherData) {
+    const courseSelect = document.getElementById('p-cours');
+    const promoSelect = document.getElementById('p-class');
+    const welcomeLabel = document.getElementById('prof-welcome');
+
+    if (courseSelect) {
+        courseSelect.innerHTML = '';
+
+        const courses = normalizeList(teacherData && teacherData.cours);
+        if (courses.length === 0) {
+            const option = document.createElement('option');
+            option.textContent = 'Aucun cours attribué';
+            option.value = '';
+            courseSelect.appendChild(option);
+        } else {
+            courses.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course;
+                option.textContent = course;
+                courseSelect.appendChild(option);
+            });
+        }
+    }
+
+    if (promoSelect) {
+        promoSelect.innerHTML = '';
+
+        const promotions = normalizeList(teacherData && teacherData.promotions);
+        if (promotions.length === 0) {
+            const option = document.createElement('option');
+            option.textContent = 'Aucune promotion attribuée';
+            option.value = '';
+            promoSelect.appendChild(option);
+        } else {
+            promotions.forEach(promo => {
+                const option = document.createElement('option');
+                option.value = promo;
+                option.textContent = promo;
+                promoSelect.appendChild(option);
+            });
+        }
+    }
+
+    if (welcomeLabel) {
+        welcomeLabel.textContent = teacherData && teacherData.nom
+            ? 'Connecté en tant que ' + teacherData.nom
+            : 'Enseignant non connecté';
+    }
+}
+
 function ajouterLignePresence(body, item) {
     if (!item || typeof item !== 'object') {
         return;
@@ -64,8 +133,13 @@ function ouvrirSession() {
 
     showView('view-prof-dash');
 
+    const teacherId = currentTeacher && currentTeacher.uid ? currentTeacher.uid : '';
+    const teacherNom = currentTeacher && currentTeacher.nom ? currentTeacher.nom : 'Enseignant';
+
+    console.log('[SESSION] Créée par', teacherNom);
+
     // QR initial
-    refreshQR(cours, promo, type);
+    refreshQR(cours, promo, type, teacherId, teacherNom);
 
     // Régénération automatique toutes les 15 secondes
     if (qrInterval) {
@@ -73,7 +147,7 @@ function ouvrirSession() {
     }
     qrInterval = setInterval(() => {
         console.log('[QR] refreshQR interval déclenché', { cours, promo, type });
-        refreshQR(cours, promo, type);
+        refreshQR(cours, promo, type, teacherId, teacherNom);
     }, 15000);
     console.log('[QR] setInterval lancé pour régénérer le QR toutes les 15 secondes', { intervalId: qrInterval, type });
 
@@ -126,7 +200,7 @@ function ouvrirSession() {
 }
 
 
-function refreshQR(cours, promo, type = 'ENTREE') {
+function refreshQR(cours, promo, type = 'ENTREE', teacherId = '', teacherNom = 'Enseignant') {
 
     const token =
         Math.random()
@@ -160,7 +234,13 @@ function refreshQR(cours, promo, type = 'ENTREE') {
         "TOKEN ACTIF : " + token;
 
     const activeSessionPath = 'active_session/' + cours;
-    const sessionPayload = { token: token, promo: promo, type: type };
+    const sessionPayload = {
+        token: token,
+        promo: promo,
+        type: type,
+        teacherId: teacherId,
+        teacherNom: teacherNom
+    };
 
     console.log('[Firebase] écriture active_session', { path: activeSessionPath, payload: sessionPayload });
 
@@ -175,6 +255,83 @@ function refreshQR(cours, promo, type = 'ENTREE') {
         });
 }
 
+
+async function loginProfesseur() {
+    const email = document.getElementById('prof-email').value.trim();
+    const password = document.getElementById('prof-password').value;
+
+    if (!email || !password) {
+        return alert('Email et mot de passe requis.');
+    }
+
+    const btn = document.getElementById('btn-login-prof');
+    if (btn) btn.disabled = true;
+
+    try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        console.log('[AUTH] Connexion réussie', user.uid);
+
+        const snapshot = await db.ref('enseignants/' + user.uid).once('value');
+        const teacherData = snapshot.exists() ? snapshot.val() : {};
+
+        currentTeacher = {
+            uid: user.uid,
+            email: user.email || email,
+            ...teacherData
+        };
+
+        console.log('[AUTH] Enseignant chargé', currentTeacher);
+
+        fillTeacherSelects(currentTeacher);
+        document.getElementById('prof-welcome').textContent = 'Connecté en tant que ' + (currentTeacher.nom || currentTeacher.email);
+        showView('view-prof-login');
+    } catch (error) {
+        console.error('[AUTH] Erreur de connexion', error);
+        alert('Connexion impossible : ' + (error.message || 'Vérifiez vos identifiants.'));
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function logoutProfesseur() {
+    if (!auth) return;
+
+    auth.signOut()
+        .then(() => {
+            currentTeacher = null;
+            fillTeacherSelects(null);
+            document.getElementById('prof-welcome').textContent = 'Aucun enseignant connecté';
+            showView('view-prof-auth');
+            console.log('[AUTH] Déconnexion réussie');
+        })
+        .catch(error => {
+            console.error('[AUTH] Erreur de déconnexion', error);
+            alert('Impossible de se déconnecter.');
+        });
+}
+
+if (auth) {
+    auth.onAuthStateChanged(async user => {
+        if (user) {
+            const snapshot = await db.ref('enseignants/' + user.uid).once('value');
+            const teacherData = snapshot.exists() ? snapshot.val() : {};
+
+            currentTeacher = {
+                uid: user.uid,
+                email: user.email || '',
+                ...teacherData
+            };
+
+            fillTeacherSelects(currentTeacher);
+            console.log('[AUTH] Session restaurée', currentTeacher);
+        } else {
+            currentTeacher = null;
+            fillTeacherSelects(null);
+        }
+    });
+}
 
 function telechargerExcel() {
 

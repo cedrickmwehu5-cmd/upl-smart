@@ -18,6 +18,7 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
     <!-- QR Code -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -43,9 +44,33 @@
             Je suis Étudiant
         </button>
 
-        <button class="btn btn-grey" onclick="showView('view-prof-login')">
+        <button class="btn btn-grey" onclick="showView('view-prof-auth')">
             <i class="fas fa-chalkboard-teacher"></i>
             Je suis Enseignant
+        </button>
+    </div>
+
+    <!-- CONNEXION PROF -->
+    <div id="view-prof-auth" class="hidden">
+
+        <h2>Connexion Enseignant</h2>
+
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="prof-email" placeholder="enseignant@upl.com">
+        </div>
+
+        <div class="input-group">
+            <label>Mot de passe</label>
+            <input type="password" id="prof-password" placeholder="********">
+        </div>
+
+        <button class="btn btn-blue" id="btn-login-prof" onclick="loginProfesseur()">
+            Se connecter
+        </button>
+
+        <button class="btn btn-grey" onclick="showView('view-home')">
+            Retour
         </button>
     </div>
 
@@ -53,23 +78,21 @@
     <div id="view-prof-login" class="hidden">
 
         <h2>Lancer une Session</h2>
+        <p id="prof-welcome" style="font-size:13px; color:#1a4fa0; margin-top:-10px; margin-bottom:18px; text-align:left;">
+            Connectez-vous pour charger vos cours et promotions.
+        </p>
 
         <div class="input-group">
-            <label>Nom du Cours *</label>
-            <input type="text" id="p-cours" placeholder="Ex: Informatique">
+            <label>Cours attribué *</label>
+            <select id="p-cours">
+                <option value="">Chargement…</option>
+            </select>
         </div>
 
         <div class="input-group">
-            <label>Promotion cible</label>
-
+            <label>Promotion attribuée</label>
             <select id="p-class">
-                <option value="Bac 1 Technologie">Bac 1 Technologie (IA, GL, SI)</option>
-                <option value="Bac 1 IGAE">Bac 1 IGAE</option>
-                <option value="Bac 3 GL_IA">Bac 3 GL/IA</option>
-                <option value="Bac 3 SI">Bac 3 SI</option>
-                <option value="Bac 3 IAGE">Bac 3 IAGE</option>
-                <option value="Bac 4 SI">Bac 4 SI</option>
-                <option value="Bac 4 GL">Bac 4 GL</option>
+                <option value="">Chargement…</option>
             </select>
         </div>
 
@@ -83,6 +106,10 @@
 
         <button class="btn btn-blue" onclick="ouvrirSession()">
             Lancer l'appel
+        </button>
+
+        <button class="btn btn-grey" id="btn-logout-prof" onclick="logoutProfesseur()">
+            Déconnexion
         </button>
 
         <button class="btn btn-grey" onclick="showView('view-home')">

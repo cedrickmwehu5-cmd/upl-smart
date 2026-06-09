@@ -16,7 +16,9 @@ firebase.initializeApp(firebaseConfig);
 console.log('[Firebase] firebase.initializeApp() appelé avec succès');
 
 const db = firebase.database();
+const auth = firebase.auth();
 console.log('[Firebase] Instance Realtime Database créée :', db ? 'OK' : 'KO');
+console.log('[Firebase] Instance Firebase Auth créée :', auth ? 'OK' : 'KO');
 
 // Test d'écriture simple pour vérifier la connexion et l'autorisation
 if (db && db.ref) {
