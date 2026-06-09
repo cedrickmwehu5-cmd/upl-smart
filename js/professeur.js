@@ -1,5 +1,34 @@
 // --- LOGIQUE PROFESSEUR ---
 
+function ajouterLignePresence(body, item) {
+    if (!item || typeof item !== 'object') {
+        return;
+    }
+
+    const tr = document.createElement('tr');
+
+    const tdNom = document.createElement('td');
+    tdNom.textContent = item.nom || '—';
+
+    const tdMatricule = document.createElement('td');
+    tdMatricule.textContent = item.matricule || '';
+
+    const tdType = document.createElement('td');
+    tdType.style.textAlign = 'center';
+    tdType.textContent = item.type || 'ENTREE';
+
+    const tdHeure = document.createElement('td');
+    tdHeure.style.textAlign = 'right';
+    tdHeure.textContent = item.heure || '';
+
+    tr.appendChild(tdNom);
+    tr.appendChild(tdMatricule);
+    tr.appendChild(tdType);
+    tr.appendChild(tdHeure);
+
+    body.appendChild(tr);
+}
+
 function getTodayDate() {
     const now = new Date();
     const year = now.getFullYear();
@@ -59,51 +88,39 @@ function ouvrirSession() {
 
             body.innerHTML = "";
 
+            if (!snap || !snap.exists()) {
+                console.log('[DEBUG] Aucune présence trouvée pour', presencesPath);
+                return;
+            }
+
             snap.forEach(child => {
+                console.log('[DEBUG] child.key =', child.key);
+                console.log('[DEBUG] child.val() =', child.val());
 
-                const s = child.val();
+                const item = child.val();
 
-                // Protection XSS
-                const tr =
-                    document.createElement('tr');
+                if (!item || typeof item !== 'object') {
+                    return;
+                }
 
-                const tdInfo =
-                    document.createElement('td');
+                const isPresenceRecord =
+                    item.nom !== undefined ||
+                    item.matricule !== undefined ||
+                    item.type !== undefined ||
+                    item.heure !== undefined;
 
-                const nom =
-                    document.createElement('b');
+                if (isPresenceRecord) {
+                    ajouterLignePresence(body, item);
+                    return;
+                }
 
-                nom.textContent = s.nom;
-
-                const br =
-                    document.createElement('br');
-
-                const mat =
-                    document.createElement('small');
-
-                mat.textContent = s.matricule;
-
-                tdInfo.appendChild(nom);
-                tdInfo.appendChild(br);
-                tdInfo.appendChild(mat);
-
-                const tdType =
-                    document.createElement('td');
-
-                tdType.style.textAlign = 'center';
-                tdType.textContent = s.type || 'ENTREE';
-
-                const tdHeure =
-                    document.createElement('td');
-
-                tdHeure.style.textAlign = 'right';
-                tdHeure.textContent = s.heure;
-
-                tr.appendChild(tdInfo);
-                tr.appendChild(tdType);
-                tr.appendChild(tdHeure);
-
-                body.appendChild(tr);
+                Object.keys(item).forEach(key => {
+                    const nestedItem = item[key];
+                    if (nestedItem && typeof nestedItem === 'object') {
+                        console.log('[DEBUG] nested item =', nestedItem);
+                        ajouterLignePresence(body, nestedItem);
+                    }
+                });
             });
         });
 }
