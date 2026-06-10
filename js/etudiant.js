@@ -163,6 +163,60 @@ function toggleCameraFacing() {
         });
 }
 
+function loadStudentPromotions() {
+    console.log('[PROMOS] Chargement...');
+
+    const select = document.getElementById('s-class');
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = '<option value="">Chargement…</option>';
+
+    db.ref('enseignants')
+        .once('value')
+        .then(snapshot => {
+            const promotions = [];
+
+            if (snapshot && snapshot.exists()) {
+                snapshot.forEach(child => {
+                    const teacherData = child.val() || {};
+                    promotions.push(...normalizeList(teacherData.promotions));
+                });
+            }
+
+            console.log('[PROMOS] Promotions trouvées :', promotions);
+
+            const uniquePromotions = promotions
+                .map(item => String(item).trim())
+                .filter(Boolean)
+                .filter((promo, index, list) => list.findIndex(item => item.toLowerCase() === promo.toLowerCase()) === index);
+
+            console.log('[PROMOS] Liste finale :', uniquePromotions);
+
+            select.innerHTML = '';
+
+            if (uniquePromotions.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Aucune promotion disponible';
+                select.appendChild(option);
+                return;
+            }
+
+            uniquePromotions.forEach(promo => {
+                const option = document.createElement('option');
+                option.value = promo;
+                option.textContent = promo;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('[PROMOS] Erreur de chargement des promotions', error);
+            select.innerHTML = '<option value="">Aucune promotion disponible</option>';
+        });
+}
+
 function setScanStatus(message, isError = false) {
     const status = document.getElementById('scan-status');
     status.textContent = message;

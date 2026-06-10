@@ -6,4 +6,5 @@ let scanLock = false;
 // Démarrage application
 document.addEventListener('DOMContentLoaded', () => {
     showView('view-home');
+    loadStudentPromotions();
 });
