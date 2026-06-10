@@ -1,6 +1,8 @@
 // --- LOGIQUE PROFESSEUR ---
 
 let currentTeacher = null;
+let selectedHistoryCourse = null;
+let selectedHistoryDate = null;
 
 function normalizeList(value) {
     if (Array.isArray(value)) {
@@ -17,6 +19,352 @@ function normalizeList(value) {
     }
 
     return [];
+}
+
+function sanitizeFirebaseKey(value) {
+    return String(value || '')
+        .trim()
+        .replace(/[.#$[\]/]/g, '_');
+}
+
+function updateTeacherList(fieldName, values) {
+    if (!currentTeacher || !currentTeacher.uid) {
+        return Promise.reject(new Error('Aucun enseignant connecté.'));
+    }
+
+    const cleaned = normalizeList(values)
+        .filter((item, index, list) => list.findIndex(current => current.toLowerCase() === item.toLowerCase()) === index);
+
+    console.log('[AUTH] UID :', currentTeacher.uid);
+
+    return db.ref('enseignants/' + currentTeacher.uid + '/' + fieldName)
+        .set(cleaned)
+        .then(() => {
+            currentTeacher[fieldName] = cleaned;
+            fillTeacherSelects(currentTeacher);
+            return cleaned;
+        });
+}
+
+function renderTeacherPersonalSpace(teacherData) {
+    const courseList = document.getElementById('teacher-courses');
+    const promoList = document.getElementById('teacher-promotions');
+    const historyLabel = document.getElementById('history-course-label');
+
+    const courses = normalizeList(teacherData && teacherData.cours);
+    const promotions = normalizeList(teacherData && teacherData.promotions);
+
+    console.log('[COURS] Chargés :', courses);
+    console.log('[PROMOS] Chargées :', promotions);
+
+    if (courseList) {
+        courseList.innerHTML = '';
+
+        if (courses.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'panel-note';
+            empty.textContent = 'Aucun cours enregistré pour le moment.';
+            courseList.appendChild(empty);
+        } else {
+            courses.forEach(course => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'chip-item';
+                chip.textContent = course;
+                chip.title = 'Consulter l’historique de ' + course;
+                chip.addEventListener('click', () => {
+                    selectedHistoryCourse = course;
+                    selectedHistoryDate = '';
+                    document.getElementById('dash-title').textContent = course;
+                    showView('view-prof-dash');
+                    chargerHistoriqueCours(course);
+                });
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'chip-remove';
+                removeBtn.textContent = '×';
+                removeBtn.title = 'Supprimer ' + course;
+                removeBtn.addEventListener('click', event => {
+                    event.stopPropagation();
+                    supprimerCours(course);
+                });
+
+                chip.appendChild(removeBtn);
+                courseList.appendChild(chip);
+            });
+        }
+    }
+
+    if (promoList) {
+        promoList.innerHTML = '';
+
+        if (promotions.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'panel-note';
+            empty.textContent = 'Aucune promotion enregistrée.';
+            promoList.appendChild(empty);
+        } else {
+            promotions.forEach(promo => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'chip-item';
+                chip.textContent = promo;
+                chip.title = 'Promotion ' + promo;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'chip-remove';
+                removeBtn.textContent = '×';
+                removeBtn.title = 'Supprimer ' + promo;
+                removeBtn.addEventListener('click', event => {
+                    event.stopPropagation();
+                    supprimerPromotion(promo);
+                });
+
+                chip.appendChild(removeBtn);
+                promoList.appendChild(chip);
+            });
+        }
+    }
+
+    if (historyLabel) {
+        historyLabel.textContent = courses.length
+            ? 'Cliquez sur un cours pour voir ses dates et ses présences.'
+            : 'Ajoutez un cours pour alimenter votre espace personnel.';
+    }
+}
+
+function ajouterCours() {
+    const courseInput = document.getElementById('course-name');
+    if (!courseInput) return;
+
+    const value = courseInput.value.trim();
+    if (!value) return alert('Nom du cours requis.');
+
+    const existing = normalizeList(currentTeacher && currentTeacher.cours);
+    const nextList = [...new Set([ ...existing, value ].map(item => item.trim()).filter(Boolean))];
+
+    updateTeacherList('cours', nextList)
+        .then(() => {
+            courseInput.value = '';
+            fillTeacherSelects(currentTeacher);
+            console.log('[COURS] Ajouté :', value);
+        })
+        .catch(error => {
+            console.error('[COURS] Impossible d’ajouter le cours', error);
+            alert('Impossible d’ajouter le cours.');
+        });
+}
+
+function supprimerCours(course) {
+    if (!confirm('Supprimer ce cours de votre espace personnel ?')) return;
+
+    const nextList = normalizeList(currentTeacher && currentTeacher.cours)
+        .filter(item => item.toLowerCase() !== String(course).toLowerCase());
+
+    updateTeacherList('cours', nextList)
+        .then(() => {
+            if (selectedHistoryCourse && selectedHistoryCourse.toLowerCase() === String(course).toLowerCase()) {
+                selectedHistoryCourse = null;
+                selectedHistoryDate = null;
+                document.getElementById('history-date').innerHTML = '<option value="">Aucune date</option>';
+                document.getElementById('history-body').innerHTML = '';
+                document.getElementById('stat-total').textContent = '0';
+                document.getElementById('stat-entries').textContent = '0';
+                document.getElementById('stat-exits').textContent = '0';
+            }
+            console.log('[COURS] Supprimé :', course);
+        })
+        .catch(error => {
+            console.error('[COURS] Impossible de supprimer le cours', error);
+            alert('Impossible de supprimer ce cours.');
+        });
+}
+
+function ajouterPromotion() {
+    const promoInput = document.getElementById('promotion-name');
+    if (!promoInput) return;
+
+    const value = promoInput.value.trim();
+    if (!value) return alert('Nom de la promotion requis.');
+
+    const existing = normalizeList(currentTeacher && currentTeacher.promotions);
+    const nextList = [...new Set([ ...existing, value ].map(item => item.trim()).filter(Boolean))];
+
+    updateTeacherList('promotions', nextList)
+        .then(() => {
+            promoInput.value = '';
+            fillTeacherSelects(currentTeacher);
+            console.log('[PROMOS] Ajoutée :', value);
+        })
+        .catch(error => {
+            console.error('[PROMOS] Impossible d’ajouter la promotion', error);
+            alert('Impossible d’ajouter la promotion.');
+        });
+}
+
+function supprimerPromotion(promo) {
+    if (!confirm('Supprimer cette promotion de votre espace personnel ?')) return;
+
+    const nextList = normalizeList(currentTeacher && currentTeacher.promotions)
+        .filter(item => item.toLowerCase() !== String(promo).toLowerCase());
+
+    updateTeacherList('promotions', nextList)
+        .then(() => {
+            console.log('[PROMOS] Supprimée :', promo);
+        })
+        .catch(error => {
+            console.error('[PROMOS] Impossible de supprimer la promotion', error);
+            alert('Impossible de supprimer cette promotion.');
+        });
+}
+
+function chargerHistoriqueCours(cours) {
+    const rawCours = String(cours || '').trim();
+    if (!rawCours) return;
+
+    selectedHistoryCourse = rawCours;
+    selectedHistoryDate = '';
+
+    const historySelect = document.getElementById('history-date');
+    if (historySelect) {
+        historySelect.innerHTML = '<option value="">Chargement…</option>';
+    }
+
+    const path = 'presences/' + sanitizeFirebaseKey(rawCours);
+    console.log('[HISTORIQUE] Lecture :', path);
+
+    db.ref(path)
+        .once('value', snap => {
+            const dates = [];
+
+            if (snap && snap.exists()) {
+                snap.forEach(child => {
+                    if (child.key) {
+                        dates.push(child.key);
+                    }
+                });
+            }
+
+            dates.sort((a, b) => b.localeCompare(a));
+
+            if (historySelect) {
+                historySelect.innerHTML = '';
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Choisir une date';
+                historySelect.appendChild(defaultOption);
+
+                dates.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date;
+                    option.textContent = date;
+                    historySelect.appendChild(option);
+                });
+            }
+
+            console.log('[HISTORIQUE] Dates disponibles :', dates);
+
+            if (dates.length > 0 && historySelect) {
+                historySelect.value = dates[0];
+                chargerHistoriqueDate(rawCours, dates[0]);
+            } else {
+                document.getElementById('history-body').innerHTML = '<tr><td colspan="5" style="text-align:center;">Aucune présence enregistrée pour ce cours.</td></tr>';
+                document.getElementById('stat-total').textContent = '0';
+                document.getElementById('stat-entries').textContent = '0';
+                document.getElementById('stat-exits').textContent = '0';
+            }
+        });
+}
+
+function chargerHistoriqueDateSelection() {
+    const select = document.getElementById('history-date');
+    if (!select || !selectedHistoryCourse) return;
+
+    selectedHistoryDate = select.value;
+    if (selectedHistoryDate) {
+        chargerHistoriqueDate(selectedHistoryCourse, selectedHistoryDate);
+    }
+}
+
+function chargerHistoriqueDate(cours, date) {
+    if (!cours || !date) return;
+
+    selectedHistoryDate = date;
+    const path = 'presences/' + sanitizeFirebaseKey(cours) + '/' + date;
+    console.log('[HISTORIQUE] Lecture :', path);
+
+    db.ref(path)
+        .once('value', snap => {
+            const data = [];
+            let total = 0;
+            let entries = 0;
+            let exits = 0;
+
+            if (snap && snap.exists()) {
+                snap.forEach(child => {
+                    const item = child.val() || {};
+                    data.push({
+                        nom: item.nom || '—',
+                        matricule: item.matricule || '',
+                        promo: item.promo || '',
+                        type: item.type || 'ENTREE',
+                        heure: item.heure || ''
+                    });
+
+                    total += 1;
+                    if (item.type === 'ENTREE') entries += 1;
+                    if (item.type === 'SORTIE') exits += 1;
+                });
+            }
+
+            renderHistoriqueTable(data);
+            document.getElementById('stat-total').textContent = String(total);
+            document.getElementById('stat-entries').textContent = String(entries);
+            document.getElementById('stat-exits').textContent = String(exits);
+            console.log('[PRESENCES] Données :', data);
+        });
+}
+
+function renderHistoriqueTable(data) {
+    const body = document.getElementById('history-body');
+    if (!body) return;
+
+    body.innerHTML = '';
+
+    if (!data.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 5;
+        cell.style.textAlign = 'center';
+        cell.textContent = 'Aucune présence pour cette date.';
+        row.appendChild(cell);
+        body.appendChild(row);
+        return;
+    }
+
+    data.forEach(item => {
+        const row = document.createElement('tr');
+
+        const nom = document.createElement('td');
+        nom.textContent = item.nom;
+
+        const matricule = document.createElement('td');
+        matricule.textContent = item.matricule;
+
+        const promo = document.createElement('td');
+        promo.textContent = item.promo;
+
+        const type = document.createElement('td');
+        type.textContent = item.type;
+
+        const heure = document.createElement('td');
+        heure.textContent = item.heure;
+
+        row.append(nom, matricule, promo, type, heure);
+        body.appendChild(row);
+    });
 }
 
 function fillTeacherSelects(teacherData) {
@@ -67,6 +415,8 @@ function fillTeacherSelects(teacherData) {
             ? 'Connecté en tant que ' + teacherData.nom
             : 'Enseignant non connecté';
     }
+
+    renderTeacherPersonalSpace(teacherData);
 }
 
 function ajouterLignePresence(body, item) {
@@ -126,6 +476,9 @@ function ouvrirSession() {
 
     document.getElementById('dash-title')
         .innerText = rawCours;
+
+    selectedHistoryCourse = rawCours;
+    selectedHistoryDate = getTodayDate();
 
     const dateJour = getTodayDate();
     console.log('[Presence] Date active :', dateJour);
@@ -271,6 +624,7 @@ async function loginProfesseur() {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
+        console.log('[AUTH] UID :', user.uid);
         console.log('[AUTH] Connexion réussie', user.uid);
 
         const snapshot = await db.ref('enseignants/' + user.uid).once('value');
@@ -281,6 +635,9 @@ async function loginProfesseur() {
             email: user.email || email,
             ...teacherData
         };
+
+        console.log('[COURS] Chargés :', normalizeList(currentTeacher.cours));
+        console.log('[PROMOS] Chargées :', normalizeList(currentTeacher.promotions));
 
         console.log('[AUTH] Enseignant chargé', currentTeacher);
 
@@ -301,6 +658,8 @@ function logoutProfesseur() {
     auth.signOut()
         .then(() => {
             currentTeacher = null;
+            selectedHistoryCourse = null;
+            selectedHistoryDate = null;
             fillTeacherSelects(null);
             document.getElementById('prof-welcome').textContent = 'Aucun enseignant connecté';
             showView('view-prof-auth');
@@ -324,6 +683,10 @@ if (auth) {
                 ...teacherData
             };
 
+            console.log('[AUTH] UID :', user.uid);
+            console.log('[COURS] Chargés :', normalizeList(currentTeacher.cours));
+            console.log('[PROMOS] Chargées :', normalizeList(currentTeacher.promotions));
+
             fillTeacherSelects(currentTeacher);
             console.log('[AUTH] Session restaurée', currentTeacher);
         } else {
@@ -335,52 +698,38 @@ if (auth) {
 
 function telechargerExcel() {
 
-    const rawCours =
-        document.getElementById('dash-title')
-            .innerText;
-
-    const cours =
-        rawCours.replace(/[.#$[\]/]/g, '_');
-
-    const dateJour = getTodayDate();
-    console.log('[Presence] Date active :', dateJour);
+    const rawCours = selectedHistoryCourse || document.getElementById('dash-title').innerText;
+    const dateJour = selectedHistoryDate || getTodayDate();
+    const cours = sanitizeFirebaseKey(rawCours);
     const presencesPath = 'presences/' + cours + '/' + dateJour;
-    console.log('[Firebase] Lecture :', presencesPath);
+
+    console.log('[HISTORIQUE] Lecture :', presencesPath);
     db.ref(presencesPath)
         .once('value', snap => {
 
-            let data = [];
+            const data = [];
 
             snap.forEach(c => {
-                const item = c.val();
+                const item = c.val() || {};
                 data.push({
-                    nom: item.nom,
-                    matricule: item.matricule,
-                    promo: item.promo,
+                    nom: item.nom || '—',
+                    matricule: item.matricule || '',
+                    promo: item.promo || '',
                     date: item.date || dateJour,
-                    heure: item.heure,
+                    heure: item.heure || '',
                     type: item.type || 'ENTREE'
                 });
             });
 
-            const ws =
-                XLSX.utils.json_to_sheet(data, {
-                    header: ['nom', 'matricule', 'promo', 'date', 'heure', 'type']
-                });
+            const ws = XLSX.utils.json_to_sheet(data, {
+                header: ['nom', 'matricule', 'promo', 'date', 'heure', 'type']
+            });
 
-            const wb =
-                XLSX.utils.book_new();
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Présences');
 
-            XLSX.utils.book_append_sheet(
-                wb,
-                ws,
-                "Présences"
-            );
-
-            XLSX.writeFile(
-                wb,
-                `Liste_${rawCours}.xlsx`
-            );
+            XLSX.writeFile(wb, `Presences_${rawCours}_${dateJour}.xlsx`);
+            console.log('[PRESENCES] Données :', data);
         });
 }
 

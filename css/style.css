@@ -150,18 +150,123 @@ h2 {
     border: 1px solid #f5c2c0;
 }
 
-#list-presence {
+#list-presence,
+.history-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
 }
 
-#list-presence td {
+#list-presence td,
+.history-table td {
     border-bottom: 1px solid #f2f2f2;
     padding: 12px;
     text-align: left;
     font-size: 13px;
     color: #444;
+}
+
+.teacher-panel {
+    background: #f8fbff;
+    border: 1px solid #e5eefb;
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 14px;
+    text-align: left;
+}
+
+.teacher-panel h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: var(--blue-upl);
+}
+
+.panel-note {
+    margin: 6px 0 10px;
+    color: #5b6b80;
+    font-size: 12px;
+}
+
+.inline-form {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.inline-form input {
+    flex: 1;
+}
+
+.btn-small {
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-bottom: 0;
+    width: auto;
+    white-space: nowrap;
+}
+
+.chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: #eef5ff;
+    color: #1a4fa0;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid #d8e7ff;
+    cursor: pointer;
+}
+
+.chip-item:hover {
+    background: #e2edff;
+}
+
+.chip-remove {
+    border: none;
+    background: transparent;
+    color: #b52020;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e7ebf2;
+    border-radius: 14px;
+    padding: 10px;
+    text-align: center;
+}
+
+.stat-card span {
+    display: block;
+    color: #5b6b80;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.stat-card strong {
+    display: block;
+    margin-top: 4px;
+    color: #173e80;
+    font-size: 18px;
 }
 
 #qrcode {
