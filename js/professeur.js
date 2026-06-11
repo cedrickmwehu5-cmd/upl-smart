@@ -627,19 +627,42 @@ async function loginProfesseur() {
         console.log('[AUTH] UID :', user.uid);
         console.log('[AUTH] Connexion réussie', user.uid);
 
-        const snapshot = await db.ref('enseignants/' + user.uid).once('value');
-        const teacherData = snapshot.exists() ? snapshot.val() : {};
+        const teacherSnapshot = await db.ref('enseignants/' + user.uid).once('value');
+        const teacherData = teacherSnapshot.exists() ? teacherSnapshot.val() : {};
+
+        const userProfileSnapshot = await db.ref('users/' + user.uid).once('value');
+        const userProfile = userProfileSnapshot.exists() ? userProfileSnapshot.val() : {};
+
+        const role = String(userProfile.role || 'enseignant').toLowerCase();
+        const nom = userProfile.nom || teacherData.nom || (user.email || email).split('@')[0];
 
         currentTeacher = {
             uid: user.uid,
             email: user.email || email,
-            ...teacherData
+            role,
+            nom,
+            ...teacherData,
+            ...userProfile
         };
+
+        if (!userProfileSnapshot.exists()) {
+            await db.ref('users/' + user.uid).set({
+                role,
+                nom,
+                email: user.email || email
+            });
+        }
 
         console.log('[COURS] Chargés :', normalizeList(currentTeacher.cours));
         console.log('[PROMOS] Chargées :', normalizeList(currentTeacher.promotions));
-
         console.log('[AUTH] Enseignant chargé', currentTeacher);
+
+        if (role === 'admin') {
+            console.log('[ADMIN] Connexion réussie');
+            document.getElementById('prof-welcome').textContent = 'Administration activée pour ' + (currentTeacher.nom || currentTeacher.email);
+            showView('view-admin');
+            return;
+        }
 
         fillTeacherSelects(currentTeacher);
         document.getElementById('prof-welcome').textContent = 'Connecté en tant que ' + (currentTeacher.nom || currentTeacher.email);
@@ -676,18 +699,30 @@ if (auth) {
         if (user) {
             const snapshot = await db.ref('enseignants/' + user.uid).once('value');
             const teacherData = snapshot.exists() ? snapshot.val() : {};
+            const userProfileSnapshot = await db.ref('users/' + user.uid).once('value');
+            const userProfile = userProfileSnapshot.exists() ? userProfileSnapshot.val() : {};
+            const role = String(userProfile.role || 'enseignant').toLowerCase();
 
             currentTeacher = {
                 uid: user.uid,
                 email: user.email || '',
-                ...teacherData
+                role,
+                nom: userProfile.nom || teacherData.nom || (user.email || '').split('@')[0],
+                ...teacherData,
+                ...userProfile
             };
 
             console.log('[AUTH] UID :', user.uid);
             console.log('[COURS] Chargés :', normalizeList(currentTeacher.cours));
             console.log('[PROMOS] Chargées :', normalizeList(currentTeacher.promotions));
 
-            fillTeacherSelects(currentTeacher);
+            if (role === 'admin') {
+                console.log('[ADMIN] Connexion réussie');
+                showView('view-admin');
+            } else {
+                fillTeacherSelects(currentTeacher);
+            }
+
             console.log('[AUTH] Session restaurée', currentTeacher);
         } else {
             currentTeacher = null;
