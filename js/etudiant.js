@@ -233,6 +233,48 @@ function clearScanStatus() {
     status.classList.add('hidden');
 }
 
+function getOrCreateDeviceId() {
+    const DEVICE_ID_KEY = 'upl-smart-device-id';
+
+    try {
+        let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+
+        if (!deviceId) {
+            deviceId = 'upl-' + (typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : 'device-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10));
+            localStorage.setItem(DEVICE_ID_KEY, deviceId);
+        }
+
+        console.log('[SECURITY] deviceId', deviceId);
+        return deviceId;
+    } catch (err) {
+        const fallbackDeviceId = 'upl-device-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        console.warn('[SECURITY] localStorage indisponible, fallback deviceId', fallbackDeviceId, err);
+        return fallbackDeviceId;
+    }
+}
+
+function getSessionDeviceStorageKey(coursId, sessionToken) {
+    return 'upl-smart-session-used:' + String(coursId || 'cours') + ':' + String(sessionToken || 'token');
+}
+
+function hasDeviceAlreadyBeenUsedForSession(coursId, sessionToken) {
+    try {
+        return localStorage.getItem(getSessionDeviceStorageKey(coursId, sessionToken)) === '1';
+    } catch (err) {
+        console.warn('[SECURITY] impossible de lire le marqueur local', err);
+        return false;
+    }
+}
+
+function markDeviceAsUsedForSession(coursId, sessionToken) {
+    try {
+        localStorage.setItem(getSessionDeviceStorageKey(coursId, sessionToken), '1');
+    } catch (err) {
+        console.warn('[SECURITY] impossible d’écrire le marqueur local', err);
+    }
+}
 
 function onScanError(errorMessage) {
     console.warn('[QR] onScanError', errorMessage);
@@ -312,6 +354,12 @@ async function onScanSuccess(decodedText) {
             } else if (err.message === 'duplicate_exit') {
                 setScanStatus('Tu as déjà enregistré ta sortie.', true);
                 alert('Tu as déjà enregistré ta sortie.');
+            } else if (err.message === 'device_conflict') {
+                setScanStatus('Cet appareil a déjà été utilisé pour une présence durant cette session.', true);
+                alert('Cet appareil a déjà été utilisé pour une présence durant cette session.');
+            } else if (err.message === 'device_already_used') {
+                setScanStatus('Une présence a déjà été enregistrée depuis cet appareil pour cette session.', true);
+                alert('Une présence a déjà été enregistrée depuis cet appareil pour cette session.');
             } else if (err.message === 'timeout') {
                 setScanStatus('Temps dépassé. Réessaie, le réseau est lent.', true);
                 alert('La validation a pris trop de temps. Réessaie.');
@@ -325,8 +373,14 @@ async function onScanSuccess(decodedText) {
 
 function validatePresence(token, promoEtudiant, matricule, nom) {
     const dateJour = getTodayDate();
+    const deviceId = getOrCreateDeviceId();
+
     console.log('[Presence] Date active :', dateJour);
     console.log('[Firebase] validatePresence démarrée', { token, promoEtudiant, matricule });
+    console.log('[SECURITY] deviceId', deviceId);
+    console.log('[SECURITY] matricule', matricule);
+    console.log('[SECURITY] sessionToken', token);
+
     const activeSessionPath = 'active_session';
     console.log('[Firebase] lecture active_session', activeSessionPath);
     return db.ref(activeSessionPath)
@@ -356,9 +410,42 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
             const sessionType = sessionData.type || 'ENTREE';
             console.log('[Firebase] type de session récupéré', sessionType);
 
-            return { coursTrouve, sessionType, dateJour };
+            if (hasDeviceAlreadyBeenUsedForSession(coursTrouve, token)) {
+                console.warn('[SECURITY] présence refusée (marqueur local)', { deviceId, matricule, sessionToken: token, cours: coursTrouve });
+                throw new Error('device_already_used');
+            }
+
+            return { coursTrouve, sessionType, dateJour, sessionData, deviceId };
         })
-        .then(({ coursTrouve, sessionType, dateJour }) => {
+        .then(({ coursTrouve, sessionType, dateJour, sessionData, deviceId }) => {
+            const sessionDevicesPath = 'session_devices/' + coursTrouve + '/' + token;
+            console.log('[Firebase] Lecture sécurité :', sessionDevicesPath);
+
+            return db.ref(sessionDevicesPath)
+                .once('value')
+                .then(sessionDeviceSnap => {
+                    const existingRecord = sessionDeviceSnap.child(deviceId).val();
+
+                    if (existingRecord) {
+                        console.warn('[SECURITY] présence refusée (enregistrement existant)', {
+                            deviceId,
+                            matricule,
+                            storedMatricule: existingRecord.matricule,
+                            sessionToken: token,
+                            cours: coursTrouve
+                        });
+
+                        if (String(existingRecord.matricule).toLowerCase() !== String(matricule).toLowerCase()) {
+                            throw new Error('device_conflict');
+                        }
+
+                        throw new Error('device_already_used');
+                    }
+
+                    return { coursTrouve, sessionType, dateJour, sessionData, deviceId };
+                });
+        })
+        .then(({ coursTrouve, sessionType, dateJour, deviceId }) => {
             const presencesPath = 'presences/' + coursTrouve + '/' + dateJour;
             console.log('[Firebase] Lecture :', presencesPath);
             return db.ref(presencesPath)
@@ -395,15 +482,19 @@ function validatePresence(token, promoEtudiant, matricule, nom) {
                         }
                     }
 
-                    return { coursTrouve, sessionType };
+                    return { coursTrouve, sessionType, deviceId, token };
                 });
         })
-        .then(({ coursTrouve, sessionType }) => valider(coursTrouve, nom, matricule, promoEtudiant, sessionType));
+        .then(({ coursTrouve, sessionType, deviceId, token: sessionToken }) => {
+            console.log('[SECURITY] présence autorisée', { deviceId, matricule, sessionToken, cours: coursTrouve });
+            return valider(coursTrouve, nom, matricule, promoEtudiant, sessionType, sessionToken, deviceId);
+        });
 }
 
-function valider(coursId, nom, matricule, promo, type) {
+function valider(coursId, nom, matricule, promo, type, sessionToken, deviceId) {
     const dateJour = getTodayDate();
     const presencesPath = 'presences/' + coursId + '/' + dateJour;
+    const securityPath = 'session_devices/' + coursId + '/' + sessionToken + '/' + deviceId;
     const payload = {
         nom: nom,
         matricule: matricule,
@@ -412,12 +503,27 @@ function valider(coursId, nom, matricule, promo, type) {
         type: type,
         heure: new Date().toLocaleTimeString('fr-FR')
     };
+    const securityPayload = {
+        deviceId: deviceId,
+        matricule: matricule,
+        sessionToken: sessionToken,
+        cours: coursId,
+        heure: new Date().toLocaleTimeString('fr-FR')
+    };
+
     console.log('[Firebase] Écriture :', presencesPath, payload);
+    console.log('[SECURITY] session device record', securityPath, securityPayload);
+
     return withTimeout(
-        db.ref(presencesPath).push(payload).then(ref => {
-            console.log('[Firebase] présence enregistrée', { coursId, key: ref.key, type: type });
-            return ref;
-        }),
+        db.ref(presencesPath)
+            .push(payload)
+            .then(ref => db.ref(securityPath).set(securityPayload).then(() => ref))
+            .then(ref => {
+                markDeviceAsUsedForSession(coursId, sessionToken);
+                console.log('[Firebase] présence enregistrée', { coursId, key: ref.key, type: type });
+                console.log('[SECURITY] présence autorisée', { deviceId, matricule, sessionToken, cours: coursId });
+                return ref;
+            }),
         4000
     );
 }
